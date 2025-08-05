@@ -6,9 +6,9 @@ import string
 def lambda_handler(event, context):
     # --- Log schema version control ---
     LOG_VERSION = {
-        "version": "v4.0",
-        "stage": "dev",  # or: "release", "beta", "hotfix"
-        "notes": "Execution-aware, fallback-aware, dual-channel telemetry (Layer 0)"
+        "version": "v4.1",
+        "stage": "dev",
+        "notes": "Telemetry-unified fallback mode; enforced anomaly schema for Layer 0"
     }
 
     # --- Incoming Parameters ---
@@ -16,14 +16,15 @@ def lambda_handler(event, context):
     function_profile_id = event.get("function_profile_id", "func_default")
     execution_phase = event.get("execution_phase", "invoke")
     concurrency_id = event.get("concurrency_id", ''.join(random.choices(string.ascii_uppercase, k=3)))
-
-        # --- Simulate upstream starvation ---
     simulate_starvation = event.get("force_starvation", False)
+
+    # --- Starvation Fallback ---
     if simulate_starvation:
         log_entry = {
             "event_id": context.aws_request_id,
+            "anomaly_type": "starvation_fallback",
+            "fallback_mode": True,
             "telemetry_status": "fallback_injected",
-            "reason": "telemetry_starvation",
             "function_profile_id": function_profile_id,
             "execution_phase": execution_phase,
             "concurrency_id": concurrency_id,
@@ -33,22 +34,18 @@ def lambda_handler(event, context):
         }
         print(json.dumps(log_entry))
         return {
-            "statusCode": 206,  # Partial content
-            "body": json.dumps("SCAFAD fallback-injected due to starvation.")
+            "statusCode": 206,
+            "body": json.dumps("SCAFAD fallback-injected due to telemetry starvation.")
         }
 
-
-    print(">>> EXECUTION REACHED <<<")
+    print(f">>> EXECUTION REACHED ({execution_phase}, {anomaly}) <<<")
     start = time.time()
-
-    # --- Configurable Timeout Threshold (in seconds) ---
-    TIMEOUT_THRESHOLD = 0.6
     fallback_mode = False
+    TIMEOUT_THRESHOLD = 0.6
 
-    # --- Anomaly Simulation ---
     try:
         if anomaly == "cold_start":
-            time.sleep(0.5)
+            time.sleep(0.2)
             memory_spike = bytearray(20 * 1024 * 1024)
         elif anomaly == "cpu_burst":
             [x ** 0.5 for x in range(1000000)]
@@ -62,12 +59,11 @@ def lambda_handler(event, context):
 
     duration = time.time() - start
 
-    # --- Timeout Fallback Logic ---
     if duration > TIMEOUT_THRESHOLD:
         fallback_mode = True
         anomaly = "timeout_fallback"
 
-    # --- Log Entry ---
+    # --- Telemetry Log ---
     log_entry = {
         "event_id": context.aws_request_id,
         "duration": round(duration, 3),
@@ -82,18 +78,16 @@ def lambda_handler(event, context):
         "log_version": LOG_VERSION
     }
 
-
-    # --- Execution-aware sampling trigger ---
+    # --- Execution-aware side trace ---
     should_emit_side_trace = (
         execution_phase == "init"
-        or anomaly in ["cold_start", "cpu_burst"]
+        or anomaly in ["cold_start", "cpu_burst", "timeout_fallback"]
         or duration > TIMEOUT_THRESHOLD
     )
 
     if should_emit_side_trace:
-        side_trace = f"[SCAFAD_TRACE] phase='{execution_phase}' profile='{function_profile_id}' ts={round(time.time(), 3)}"
+        side_trace = f"[SCAFAD_TRACE] phase='{execution_phase}' profile='{function_profile_id}' anomaly='{anomaly}' ts={round(time.time(), 3)}"
         print(side_trace)
-
 
     print(json.dumps(log_entry))
 

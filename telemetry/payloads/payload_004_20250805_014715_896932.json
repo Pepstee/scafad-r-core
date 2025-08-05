@@ -1,0 +1,8 @@
+{
+  "anomaly": "benign",
+  "function_profile_id": "func_B",
+  "execution_phase": "init",
+  "concurrency_id": "ATC",
+  "force_starvation": true,
+  "invocation_timestamp": 1754354835.8969324
+}

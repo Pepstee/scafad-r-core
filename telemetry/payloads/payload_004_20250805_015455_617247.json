@@ -1,0 +1,8 @@
+{
+  "anomaly": "benign",
+  "function_profile_id": "func_C",
+  "execution_phase": "invoke",
+  "concurrency_id": "HGQ",
+  "force_starvation": false,
+  "invocation_timestamp": 1754355295.6172478
+}

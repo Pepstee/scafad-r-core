@@ -1,0 +1,8 @@
+{
+  "anomaly": "cpu_burst",
+  "function_profile_id": "func_C",
+  "execution_phase": "shutdown",
+  "concurrency_id": "IWE",
+  "force_starvation": false,
+  "invocation_timestamp": 1754354812.8022935
+}

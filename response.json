@@ -1,1 +1,1 @@
-{"statusCode": 200, "body": "\"SCAFAD online. Awaiting anomaly telemetry.\""}
+{"statusCode": 200, "body": "\"SCAFAD online. Fallback-aware telemetry complete.\""}

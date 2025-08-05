@@ -1,0 +1,8 @@
+{
+  "anomaly": "cpu_burst",
+  "function_profile_id": "func_B",
+  "execution_phase": "init",
+  "concurrency_id": "DEX",
+  "force_starvation": false,
+  "invocation_timestamp": 1754355219.6764343
+}
