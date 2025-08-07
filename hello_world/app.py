@@ -2,6 +2,15 @@ import time
 import random
 import json
 import string
+from tenacity import retry, stop_after_attempt, wait_exponential_jitter
+import logging
+
+
+# --- Resilient Logger ---
+@retry(stop=stop_after_attempt(3), wait=wait_exponential_jitter(max=2))
+def safe_print(msg):
+    print(msg)
+
 
 def lambda_handler(event, context):
     # --- Log schema version control ---
@@ -32,13 +41,13 @@ def lambda_handler(event, context):
             "timestamp": time.time(),
             "log_version": LOG_VERSION
         }
-        print(json.dumps(log_entry))
+        safe_print(json.dumps(log_entry))
         return {
             "statusCode": 206,
             "body": json.dumps("SCAFAD fallback-injected due to telemetry starvation.")
         }
 
-    print(f">>> EXECUTION REACHED ({execution_phase}, {anomaly}) <<<")
+    safe_print(f">>> EXECUTION REACHED ({execution_phase}, {anomaly}) <<<")
     start = time.time()
     fallback_mode = False
     TIMEOUT_THRESHOLD = 0.6
@@ -87,9 +96,9 @@ def lambda_handler(event, context):
 
     if should_emit_side_trace:
         side_trace = f"[SCAFAD_TRACE] phase='{execution_phase}' profile='{function_profile_id}' anomaly='{anomaly}' ts={round(time.time(), 3)}"
-        print(side_trace)
+        safe_print(side_trace)
 
-    print(json.dumps(log_entry))
+    safe_print(json.dumps(log_entry))
 
     return {
         "statusCode": 200,
