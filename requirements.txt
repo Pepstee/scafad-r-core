@@ -1,0 +1,5 @@
+# SCAFAD Layer 0 Dependencies
+tenacity>=8.0.0
+networkx>=2.8.0
+boto3>=1.26.0
+numpy>=1.21.0

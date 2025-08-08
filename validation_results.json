@@ -1,0 +1,9 @@
+{
+  "timestamp": "2025-08-08T23:53:42.854914",
+  "validation_passed": false,
+  "issues_count": 1,
+  "issues": [
+    "Missing response field: telemetry_id"
+  ],
+  "layer1_ready": false
+}
