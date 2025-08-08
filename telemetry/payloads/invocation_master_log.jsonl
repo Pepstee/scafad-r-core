@@ -44,3 +44,12 @@
 {"anomaly": "benign", "function_profile_id": "func_C", "execution_phase": "invoke", "concurrency_id": "HGQ", "force_starvation": false, "invocation_timestamp": 1754355620.9897943}
 {"anomaly": "cpu_burst", "function_profile_id": "func_C", "execution_phase": "init", "concurrency_id": "VVP", "force_starvation": true, "invocation_timestamp": 1754355631.746033}
 {"anomaly": "cpu_burst", "function_profile_id": "func_C", "execution_phase": "init", "concurrency_id": "OBO", "force_starvation": false, "invocation_timestamp": 1754355642.9917743}
+{"anomaly": "benign", "function_profile_id": "func_A", "execution_phase": "init", "concurrency_id": "TGD", "force_starvation": true, "invocation_timestamp": 1754568439.155673}
+{"anomaly": "benign", "function_profile_id": "func_C", "execution_phase": "shutdown", "concurrency_id": "CKA", "force_starvation": false, "invocation_timestamp": 1754568445.3504722}
+{"anomaly": "cold_start", "function_profile_id": "func_C", "execution_phase": "shutdown", "concurrency_id": "AFQ", "force_starvation": false, "invocation_timestamp": 1754568450.8428812}
+{"anomaly": "benign", "function_profile_id": "func_A", "execution_phase": "init", "concurrency_id": "TGD", "force_starvation": true, "invocation_timestamp": 1754568554.5743065}
+{"anomaly": "benign", "function_profile_id": "func_C", "execution_phase": "shutdown", "concurrency_id": "CKA", "force_starvation": false, "invocation_timestamp": 1754568585.5820484}
+{"anomaly": "cold_start", "function_profile_id": "func_C", "execution_phase": "shutdown", "concurrency_id": "AFQ", "force_starvation": false, "invocation_timestamp": 1754568597.9701734}
+{"anomaly": "benign", "function_profile_id": "func_A", "execution_phase": "init", "concurrency_id": "TGD", "force_starvation": true, "invocation_timestamp": 1754568691.6424868}
+{"anomaly": "benign", "function_profile_id": "func_C", "execution_phase": "shutdown", "concurrency_id": "CKA", "force_starvation": false, "invocation_timestamp": 1754568702.33284}
+{"anomaly": "cold_start", "function_profile_id": "func_C", "execution_phase": "shutdown", "concurrency_id": "AFQ", "force_starvation": false, "invocation_timestamp": 1754568712.600905}

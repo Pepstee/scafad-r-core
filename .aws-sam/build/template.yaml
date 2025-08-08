@@ -1,7 +1,9 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Basic SAM template
+Description: Basic SAM template with SQS DLQ for resilience
 Resources:
+  TelemetryDLQ:
+    Type: AWS::SQS::Queue
   HelloWorldFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -14,5 +16,17 @@ Resources:
           Properties:
             Path: /hello
             Method: get
+      DeadLetterQueue:
+        Type: SQS
+        TargetArn:
+          Fn::GetAtt:
+          - TelemetryDLQ
+          - Arn
+      Policies:
+      - SQSSendMessagePolicy:
+          QueueName:
+            Fn::GetAtt:
+            - TelemetryDLQ
+            - QueueName
     Metadata:
       SamResourceId: HelloWorldFunction

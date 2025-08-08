@@ -1,0 +1,116 @@
+{
+  "anomaly": "network_anomaly",
+  "function_profile_id": "ml_inference",
+  "execution_phase": "init",
+  "concurrency_id": "TRJ",
+  "invocation_timestamp": 1754688455.1677346,
+  "test_mode": true,
+  "payload_id": "scafad_invoke_0037",
+  "batch_id": "batch_1754688455",
+  "seed": 42,
+  "model_name": "model_regression",
+  "input_data": {
+    "features": [
+      0.9668111335686056,
+      0.331596702081835,
+      0.7962310644273127,
+      0.10594455160608718,
+      0.09860655858172751,
+      0.22200107954946335,
+      0.7468530276328158,
+      0.5579934163430206,
+      0.6876644087972894,
+      0.22103173617853633,
+      0.3741195678050381,
+      0.4630632085527645,
+      0.67955548754774,
+      0.6904373057221307,
+      0.15074493247991338,
+      0.9977027254146534,
+      0.48277108449153117,
+      0.2954322205184059,
+      0.9205475446710576,
+      0.08585479942015806,
+      0.8313177447071385,
+      0.7301507230227826,
+      0.34832865232147525,
+      0.3430666808436261,
+      0.784269997528697,
+      0.5211148298004716,
+      0.34830029663564654,
+      0.09762303112570891,
+      0.7219939432797079,
+      0.45244719325683613,
+      0.06717434004145917,
+      0.04468305267532113,
+      0.7107789897552524,
+      0.02258511520311235,
+      0.34307794755674836
+    ],
+    "metadata": {
+      "version": "v1.2",
+      "timestamp": 1754688455.1677346
+    }
+  },
+  "inference_config": {
+    "batch_inference": true,
+    "confidence_threshold": 0.869284833222721
+  },
+  "network_calls": [
+    {
+      "url": "https://api0.example.com",
+      "timeout": 13
+    },
+    {
+      "url": "https://api1.example.com",
+      "timeout": 1
+    },
+    {
+      "url": "https://api2.example.com",
+      "timeout": 23
+    },
+    {
+      "url": "https://api3.example.com",
+      "timeout": 7
+    },
+    {
+      "url": "https://api4.example.com",
+      "timeout": 7
+    },
+    {
+      "url": "https://api5.example.com",
+      "timeout": 9
+    },
+    {
+      "url": "https://api6.example.com",
+      "timeout": 25
+    },
+    {
+      "url": "https://api7.example.com",
+      "timeout": 23
+    },
+    {
+      "url": "https://api8.example.com",
+      "timeout": 26
+    }
+  ],
+  "layer0_enhanced": true,
+  "schema_version": "v4.2",
+  "enable_graph_analysis": true,
+  "enable_provenance": true,
+  "enable_economic_monitoring": false,
+  "force_starvation": false,
+  "metadata": {
+    "generator": "enhanced_invoke.py",
+    "generation_time": "2025-08-08T22:27:35.167734",
+    "mode": "test",
+    "total_invocations": 50,
+    "invocation_index": 37
+  },
+  "execution_environment": {
+    "region": "us-west-2",
+    "availability_zone": "b",
+    "runtime": "python3.10",
+    "memory_allocation": 256
+  }
+}
