@@ -1,0 +1,46 @@
+{
+  "anomaly": "execution_failure",
+  "function_profile_id": "notification_service",
+  "execution_phase": "shutdown",
+  "concurrency_id": "MGL",
+  "invocation_timestamp": 1754688455.166701,
+  "test_mode": true,
+  "payload_id": "scafad_invoke_0007",
+  "batch_id": "batch_1754688455",
+  "seed": 42,
+  "notification_type": "sms",
+  "recipients": [
+    "user0@example.com",
+    "user1@example.com",
+    "user2@example.com",
+    "user3@example.com"
+  ],
+  "message": {
+    "subject": "Test Notification",
+    "body": "This is a test notification from SCAFAD Layer 0",
+    "priority": "normal"
+  },
+  "delivery_options": {
+    "retry_attempts": 1,
+    "delay_seconds": 133
+  },
+  "layer0_enhanced": true,
+  "schema_version": "v4.2",
+  "enable_graph_analysis": true,
+  "enable_provenance": true,
+  "enable_economic_monitoring": false,
+  "force_starvation": false,
+  "metadata": {
+    "generator": "enhanced_invoke.py",
+    "generation_time": "2025-08-08T22:27:35.166701",
+    "mode": "test",
+    "total_invocations": 50,
+    "invocation_index": 7
+  },
+  "execution_environment": {
+    "region": "eu-west-1",
+    "availability_zone": "b",
+    "runtime": "python3.10",
+    "memory_allocation": 512
+  }
+}

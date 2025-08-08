@@ -1,0 +1,8 @@
+{
+  "anomaly": "benign",
+  "function_profile_id": "func_A",
+  "execution_phase": "init",
+  "concurrency_id": "TGD",
+  "force_starvation": true,
+  "invocation_timestamp": 1754568439.155673
+}

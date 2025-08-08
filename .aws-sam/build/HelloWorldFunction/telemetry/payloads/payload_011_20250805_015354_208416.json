@@ -1,0 +1,8 @@
+{
+  "anomaly": "cpu_burst",
+  "function_profile_id": "func_B",
+  "execution_phase": "invoke",
+  "concurrency_id": "RIG",
+  "force_starvation": false,
+  "invocation_timestamp": 1754355234.208417
+}

@@ -1,0 +1,2 @@
+anomaly_type,concurrency_id,duration,event_id,execution_phase,fallback_mode,function_profile_id,log_version,memory_spike_kb,source,timestamp
+timeout_fallback,OBO,2.008,8ebd78d9-0e8f-4e6b-9f3a-acf3b5699a12,init,True,func_C,"{'version': 'v4.1', 'stage': 'dev', 'notes': 'Telemetry-unified fallback mode; enforced anomaly schema for Layer 0'}",10240,scafad-lambda,1754356312.8161414

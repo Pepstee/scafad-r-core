@@ -1,0 +1,8 @@
+{
+  "anomaly": "benign",
+  "function_profile_id": "func_B",
+  "execution_phase": "invoke",
+  "concurrency_id": "URK",
+  "force_starvation": false,
+  "invocation_timestamp": 1754355190.307733
+}
