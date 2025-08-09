@@ -74,7 +74,7 @@ class TestFixtures:
             network_io_bytes=2048,
             # Required parameters that were missing:
             fallback_mode=False,
-            source=TelemetrySource.PRIMARY,
+        source=TelemetrySource.SCAFAD_LAYER0,
             concurrency_id="test_concurrency_001"
         )
     
@@ -93,7 +93,7 @@ class TestFixtures:
             network_io_bytes=1048576,
             # Required parameters:
             fallback_mode=False,
-            source=TelemetrySource.PRIMARY,
+        source=TelemetrySource.SCAFAD_LAYER0,
             concurrency_id="test_concurrency_002"
         )
     
@@ -127,14 +127,12 @@ class TestFixtures:
                 cpu_utilization=random.uniform(10.0, 90.0),
                 network_io_bytes=random.randint(1000, 50000),
                 fallback_mode=False,
-                source=TelemetrySource.PRIMARY,
+            source=TelemetrySource.SCAFAD_LAYER0,
                 concurrency_id=f"test_concurrency_{i}"
             )
             dataset.append(record)
         return dataset
 
-
-"""
 [tool:pytest]
 asyncio_mode = auto
 markers =
@@ -152,13 +150,15 @@ addopts =
     -ra
 """
 
-# Fix 3: Bug fixes for app_adversarial.py
 
 # Fix for _assess_operational_risk method - add missing vulnerability parameter:
 def _assess_operational_risk(self, robustness_scores: Dict[str, Dict[str, float]], 
                            test_results: Dict[str, Any],
-                           vulnerabilities: Dict[str, Any] = None) -> Dict[str, Any]:
-    """Assess operational risk based on robustness analysis"""
+                       vulnerabilities: Dict[str, Any] = None) -> Dict[str, Any]:
+   """Assess operational risk based on robustness analysis"""
+
+
+
     
     # Provide default vulnerabilities if not passed
     if vulnerabilities is None:

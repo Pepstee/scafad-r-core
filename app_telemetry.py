@@ -256,7 +256,7 @@ class TelemetryRecord:
         # Validate required fields
         if not self.event_id:
             raise ValueError("event_id is required")
-        if not self.function_id:
+        if  not self.function_id:
             raise ValueError("function_id is required")
         
         # Type conversion and validation

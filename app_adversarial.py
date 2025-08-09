@@ -1467,7 +1467,7 @@ class EconomicAttackSimulator:
                 cpu_utilization=random.uniform(80, 100),
                 network_io_bytes=random.randint(1000, 10000),
                 fallback_mode=False,
-                source='PRIMARY', # Using string literal for TelemetrySource enum
+                source=TelemetrySource.SCAFAD_LAYER0,
                 concurrency_id=f"dow_concurrency_{i}"
             )
             
@@ -1534,7 +1534,7 @@ class EconomicAttackSimulator:
                 cpu_utilization=random.uniform(95, 99.9),  # Very high CPU
                 network_io_bytes=random.randint(100, 1000),  # Minimal network
                 fallback_mode=False,
-                source='PRIMARY', # Using string literal
+                source=TelemetrySource.SCAFAD_LAYER0,
                 concurrency_id=f"mining_concurrency_{i}"
             )
             
@@ -1589,7 +1589,7 @@ class EconomicAttackSimulator:
                 cpu_utilization=random.uniform(90, 100),
                 network_io_bytes=random.randint(1000000, 10000000),  # 1-10MB
                 fallback_mode=False,
-                source='PRIMARY', # Using string literal
+                source=TelemetrySource.SCAFAD_LAYER0,
                 concurrency_id=f"amplification_concurrency_{i}"
             )
             
@@ -2188,7 +2188,9 @@ class AdversarialAnomalyEngine:
             telemetry.memory_spike_kb / 1000.0,  # Normalize to MB
             telemetry.cpu_utilization / 100.0,  # Normalize to [0,1]
             telemetry.network_io_bytes / 1000.0,  # Normalize to KB
-            int(telemetry.execution_phase.value) if hasattr(telemetry.execution_phase, 'value') else 0,
+            {phase: idx for idx, phase in enumerate(ExecutionPhase)}.get(
+                telemetry.execution_phase, 0
+            ),
             telemetry.timestamp % 3600,  # Hour of day feature
             len(telemetry.function_id),  # Function name length
             1.0 if telemetry.anomaly_type != AnomalyType.BENIGN else 0.0,
@@ -2382,6 +2384,9 @@ class AdversarialAnomalyEngine:
                     f"Economic_Impact=${attack_result.economic_impact:.2f}, "
                     f"Success_Rate={stats['success_rate']:.3f}, "
                     f"Detection_Rate={stats['detection_rate']:.3f}")
+        
+    async def _check_performance_alerts(self, attack_type: str, stats: Dict[str, Any]):
+        """Check for performance alerts based on attack success patterns"""
         
         # Trigger performance alerts if needed
         await self._check_performance_alerts(attack_type, stats)
@@ -2991,10 +2996,19 @@ class AdversarialRobustnessAnalyzer:
         
         return comparison
     
-    def _assess_operational_risk(self, robustness_scores: Dict[str, Dict[str, float]], 
-                               test_results: Dict[str, Any], vulnerabilities: Dict[str, Any]) -> Dict[str, Any]:
+    def _assess_operational_risk(
+        self,
+        robustness_scores: Dict[str, Dict[str, float]],
+        test_results: Dict[str, Any],
+        vulnerabilities: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         """Assess operational risk based on robustness analysis"""
         
+
+        if vulnerabilities is None:
+            vulnerabilities = {"critical_vulnerabilities": []}
+
+
         risk_assessment = {
             'attack_success_probability': {},
             'economic_impact_risk': 0.0,
@@ -3466,3 +3480,5 @@ __all__ = [
     'QueryFreeAttackEngine',
     'TransferAttackEngine'
 ]
+
+
