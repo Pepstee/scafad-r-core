@@ -74,7 +74,7 @@ class TestFixtures:
             network_io_bytes=2048,
             # Required parameters that were missing:
             fallback_mode=False,
-        source=TelemetrySource.SCAFAD_LAYER0,
+            source=TelemetrySource.PRIMARY,
             concurrency_id="test_concurrency_001"
         )
     
@@ -93,7 +93,7 @@ class TestFixtures:
             network_io_bytes=1048576,
             # Required parameters:
             fallback_mode=False,
-        source=TelemetrySource.SCAFAD_LAYER0,
+            source=TelemetrySource.PRIMARY,
             concurrency_id="test_concurrency_002"
         )
     
@@ -127,7 +127,7 @@ class TestFixtures:
                 cpu_utilization=random.uniform(10.0, 90.0),
                 network_io_bytes=random.randint(1000, 50000),
                 fallback_mode=False,
-            source=TelemetrySource.SCAFAD_LAYER0,
+                source=TelemetrySource.SCAFAD_LAYER0,
                 concurrency_id=f"test_concurrency_{i}"
             )
             dataset.append(record)
@@ -152,13 +152,10 @@ addopts =
 
 
 # Fix for _assess_operational_risk method - add missing vulnerability parameter:
-def _assess_operational_risk(self, robustness_scores: Dict[str, Dict[str, float]], 
+def AdversarialRobustnessAnalyzer._assess_operational_risk(self, robustness_scores: Dict[str, Dict[str, float]],
                            test_results: Dict[str, Any],
-                       vulnerabilities: Dict[str, Any] = None) -> Dict[str, Any]:
-   """Assess operational risk based on robustness analysis"""
-
-
-
+                           vulnerabilities: Dict[str, Any] = None) -> Dict[str, Any]:
+    """Assess operational risk based on robustness analysis"""
     
     # Provide default vulnerabilities if not passed
     if vulnerabilities is None:
@@ -358,7 +355,7 @@ def _generate_improvement_recommendations(self, robustness_scores: Dict[str, Dic
     
     return recommendations
 
-# Fix for research report generation in AdversarialMetricsCollector:
+
 def generate_research_report(self) -> Dict[str, Any]:
     """Generate comprehensive research report on adversarial testing"""
     
@@ -373,7 +370,7 @@ def generate_research_report(self) -> Dict[str, Any]:
             'average_stealth': np.mean([m['stealth_score'] for m in self.metrics_history]),
             'total_economic_impact': sum(m['economic_impact'] for m in self.metrics_history)
         },
-        'attack_type_analysis': {},
+    'attack_type_analysis': {},
         'performance_baselines': self.performance_baselines,
         'temporal_trends': {}  # Add this missing field
     }
@@ -1188,7 +1185,7 @@ class TestAdversarialMetricsCollector:
         temporal_trends = report['temporal_trends']
         
         if not temporal_trends.get('insufficient_data'):
-            assert 'trend_direction' in temporal_trends
+            assert  'trend_direction' in temporal_trends
             assert 'rolling_success_rate' in temporal_trends
             # Should detect increasing trend
             assert temporal_trends['trend_direction'] == 'increasing'
@@ -1397,7 +1394,7 @@ class TestTransferAttackEngine:
         assert 'resource_intensity' in mid_features
         assert 'cpu_efficiency' in mid_features
         
-        assert 'anomaly_indicator' in high_features
+        assert  'anomaly_indicator' in high_features
         assert 'execution_complexity' in high_features
     
     def test_feature_perturbation(self):
@@ -1488,7 +1485,7 @@ class TestPerformanceAndScalability:
         total_time = end_time - start_time
         assert total_time < 2.0, f"Concurrent attacks took {total_time:.2f} seconds"
 
-    def test_memory_usage_with_large_datasets(self):
+    def test_memory_usage_with_large_datasets(self): 
         """Test memory usage with large datasets"""
         try:
             import psutil
@@ -1579,7 +1576,7 @@ class TestErrorHandlingAndEdgeCases:
         assert abs(zero_noise_result.duration - sample_telemetry.duration) < 0.001
     
     def test_malformed_telemetry_handling(self):
-        """Test handling of malformed telemetry records"""
+            """Test handling of malformed telemetry records"""
         # Create telemetry with extreme values
         malformed_telemetry = TelemetryRecord(
             event_id="malformed_001",
@@ -1745,3 +1742,4 @@ if __name__ == "__main__":
     
     # To run all tests:
     # pytest test_adversarial.py -v
+\ No newline at end of file
