@@ -156,6 +156,7 @@ class ExecutionPhase(Enum):
 class TelemetrySource(Enum):
     """Source of telemetry generation"""
     
+    PRIMARY = "primary"
     SCAFAD_LAYER0 = "scafad-layer0"
     ADVERSARIAL_SIMULATOR = "adversarial-simulator"
     FALLBACK_GENERATOR = "fallback-generator"
@@ -165,7 +166,7 @@ class TelemetrySource(Enum):
     SILENT_FAILURE_DETECTOR = "silent-failure-detector"
     FORMAL_VERIFIER = "formal-verifier"
     EXTERNAL_INJECTOR = "external-injector"
-    
+
     @property
     def trust_level(self) -> float:
         """Trust level of the source (0.0-1.0)"""
@@ -178,7 +179,8 @@ class TelemetrySource(Enum):
             self.PROVENANCE_TRACKER: 0.95,
             self.SILENT_FAILURE_DETECTOR: 0.8,
             self.FORMAL_VERIFIER: 0.95,
-            self.EXTERNAL_INJECTOR: 0.3        # Lowest trust for external sources
+            self.EXTERNAL_INJECTOR: 0.3,        # Lowest trust for external sources
+            self.PRIMARY: 1.0
         }
         return trust_levels.get(self, 0.5)
 

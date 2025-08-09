@@ -48,6 +48,48 @@ except ImportError:
     TORCH_AVAILABLE = False
     logging.warning("PyTorch/PyG not available. Graph ML features disabled.")
 
+
+    class _DummyModule:
+        def __init__(self, *args, **kwargs):
+            pass
+
+    class torch:  # type: ignore
+        Tensor = Any
+
+    class nn:  # type: ignore
+        Module = object
+
+    class GCNConv:  # type: ignore
+        def __init__(self, *args, **kwargs):
+            pass
+
+    class GATConv:  # type: ignore
+        def __init__(self, *args, **kwargs):
+            pass
+
+    def global_mean_pool(*args, **kwargs):  # type: ignore
+        return None
+
+    class Data:  # type: ignore
+        pass
+
+    class Batch:  # type: ignore
+        pass
+
+    class DBSCAN:  # type: ignore
+        pass
+
+    class KMeans:  # type: ignore
+        pass
+
+    def cosine_similarity(*args, **kwargs):  # type: ignore
+        return np.array([[0.0]])
+
+    class StandardScaler:  # type: ignore
+        def fit_transform(self, X):
+            return X
+
+
 from app_config import GraphConfig
 from app_telemetry import TelemetryRecord, AnomalyType, ExecutionPhase
 

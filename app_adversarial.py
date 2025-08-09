@@ -92,7 +92,7 @@ except ImportError:
     logging.warning("SciPy not available. Statistical analysis features limited.")
 
 from app_config import AdversarialConfig, AdversarialMode
-from app_telemetry import TelemetryRecord, AnomalyType, ExecutionPhase
+from app_telemetry import TelemetryRecord, AnomalyType, ExecutionPhase, TelemetrySource
 
 
 class AttackType(Enum):
@@ -531,7 +531,8 @@ class AdversarialMetricsCollector:
                 'total_economic_impact': sum(m['economic_impact'] for m in self.metrics_history)
             },
             'attack_type_analysis': {},
-            'performance_baselines': self.performance_baselines
+            'performance_baselines': self.performance_baselines,
+            'temporal_trends': {}  # Add the missing field
         }
         
         # Analyze by attack type
@@ -546,6 +547,35 @@ class AdversarialMetricsCollector:
                 'avg_perturbation': np.mean([m['perturbation_magnitude'] for m in type_metrics]) if type_metrics else 0.0,
                 'economic_impact': sum(m['economic_impact'] for m in type_metrics),
                 'detection_rate': np.mean([m['detection_triggered'] for m in type_metrics]) if type_metrics else 0.0
+            }
+        
+        # Add temporal trend analysis
+        if len(self.metrics_history) > 1:
+            timestamps = [m['timestamp'] for m in self.metrics_history]
+            timestamps.sort()
+            
+            # Calculate trends over time
+            window_size = max(5, len(self.metrics_history) // 4)
+            recent_metrics = self.metrics_history[-window_size:]
+            early_metrics = self.metrics_history[:window_size]
+            
+            recent_success_rate = np.mean([m['attack_success'] for m in recent_metrics])
+            early_success_rate = np.mean([m['attack_success'] for m in early_metrics])
+            
+            report['temporal_trends'] = {
+                'success_rate_trend': 'increasing' if recent_success_rate > early_success_rate + 0.1 
+                                     else 'decreasing' if recent_success_rate < early_success_rate - 0.1 
+                                     else 'stable',
+                'recent_success_rate': recent_success_rate,
+                'early_success_rate': early_success_rate,
+                'time_span_hours': (timestamps[-1] - timestamps[0]) / 3600 if len(timestamps) > 1 else 0
+            }
+        else:
+            report['temporal_trends'] = {
+                'success_rate_trend': 'insufficient_data',
+                'recent_success_rate': 0.0,
+                'early_success_rate': 0.0,
+                'time_span_hours': 0.0
             }
         
         return report
@@ -2437,6 +2467,9 @@ class QueryFreeAttackEngine:
         # Build simple surrogate (decision tree approximation)
         if TORCH_AVAILABLE:
             self.surrogate_models = self._build_decision_tree_surrogate(features, labels)
+        else:
+            # Fallback: create a simple statistical surrogate
+            self.surrogate_models = [{"type": "statistical", "feature_stats": self.feature_statistics}]
         
         logging.info(f"Surrogate model built with {len(training_data)} samples")
     
