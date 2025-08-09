@@ -1,0 +1,309 @@
+{
+  "execution_summary": {
+    "total_invocations": 10,
+    "successful": 10,
+    "failed": 0,
+    "total_duration": 243.08250284194946,
+    "success_rate": 1.0
+  },
+  "configuration": {
+    "mode": "test",
+    "adversarial_enabled": false,
+    "economic_enabled": false,
+    "seed": 42,
+    "function_name": "HelloWorldFunction",
+    "batch_size": 10
+  },
+  "scafad_analytics": {
+    "anomaly_detection_rate": 1.0,
+    "avg_processing_time": 4.952239990234375,
+    "high_risk_count": 0,
+    "economic_risk_distribution": {
+      "low": 0,
+      "medium": 0,
+      "high": 0
+    }
+  },
+  "detailed_results": [
+    {
+      "invocation_index": 0,
+      "success": true,
+      "duration": 49.444679975509644,
+      "returncode": 0,
+      "stdout": "{\"statusCode\": 202, \"body\": \"{\\\"message\\\": \\\"SCAFAD Layer 0 - Enhanced telemetry processing complete\\\", \\\"telemetry_id\\\": \\\"e3828d13-cdd6-4853-bfe0-9931db39d85d\\\", \\\"node_id\\\": \\\"e3828d13-cdd6-4853-bfe0-9931db39d85d_1754703038933909286\\\", \\\"provenance_id\\\": \\\"04afc995-c757-4047-8018-c3dd6e601a94\\\", \\\"anomaly_detected\\\": true, \\\"economic_risk_score\\\": 0.3, \\\"processing_time_ms\\\": 4.712581634521484, \\\"emission_success\\\": true, \\\"completeness_score\\\": 1.0, \\\"performance_summary\\\": {\\\"total_invocations\\\": 1, \\\"successful_emissions\\\": 1, \\\"fallback_activations\\\": 1, \\\"anomalies_detected\\\": 1, \\\"success_rate\\\": 1.0, \\\"fallback_rate\\\": 1.0, \\\"anomaly_rate\\\": 1.0, \\\"graph_metrics\\\": {\\\"node_count\\\": 1, \\\"edge_count\\\": 0, \\\"density\\\": 0, \\\"connected_components\\\": 1, \\\"average_clustering\\\": 0.0, \\\"temporal_span\\\": 0.0}}, \\\"request_id\\\": \\\"e3828d13-cdd6-4853-bfe0-9931db39d85d\\\", \\\"function_name\\\": \\\"HelloWorldFunction\\\", \\\"execution_phase\\\": \\\"shutdown\\\", \\\"anomaly\\\": \\\"cold_start\\\", \\\"payload_id\\\": \\\"scafad_l0_0000\\\", \\\"schema_version\\\": \\\"v4.2\\\"}\", \"headers\": {\"Content-Type\": \"application/json\", \"X-SCAFAD-Version\": \"v4.2\", \"X-SCAFAD-Layer\": \"0\", \"X-Processing-Time\": \"4.712581634521484\", \"X-Telemetry-Id\": \"e3828d13-cdd6-4853-bfe0-9931db39d85d\"}}",
+      "stderr": "Invoking app.lambda_handler (python3.11)\nLocal image is up-to-date\nUsing local image: public.ecr.aws/lambda/python:3.11-rapid-x86_64.\n\nMounting C:\\Users\\Gutua\\OneDrive\\Documents\\scafad-lambda\\.aws-sam\\build\\HelloWorldFunction as /var/task:ro,delegated, inside runtime container\nSTART RequestId: d8bf440c-d916-46b4-818f-c5bda09b8328 Version: $LATEST\nâœ… SCAFAD Layer 0 vv4.2 loaded successfully\nðŸ“Š 17 components available for import\nðŸ”§ Configuration: NORMAL verbosity\nðŸš€ Ready for serverless anomaly detection\n[SCAFAD_TRACE] ts=1754703038.933 func=HelloWorldFunction phase=ExecutionPhase.SHUTDOWN anomaly=AnomalyType.CPU_BURST duration=0.147s memory=10649KB fallback=True\nEND RequestId: e3828d13-cdd6-4853-bfe0-9931db39d85d\nREPORT RequestId: e3828d13-cdd6-4853-bfe0-9931db39d85d\tInit Duration: 0.51 ms\tDuration: 38573.75 ms\tBilled Duration: 38574 ms\tMemory Size: 1024 MB\tMax Memory Used: 1024 MB\t\n\n",
+      "timestamp": "2025-08-09T02:30:40.702742",
+      "payload_id": "scafad_l0_0000",
+      "lambda_response": {
+        "statusCode": 202,
+        "body": "{\"message\": \"SCAFAD Layer 0 - Enhanced telemetry processing complete\", \"telemetry_id\": \"e3828d13-cdd6-4853-bfe0-9931db39d85d\", \"node_id\": \"e3828d13-cdd6-4853-bfe0-9931db39d85d_1754703038933909286\", \"provenance_id\": \"04afc995-c757-4047-8018-c3dd6e601a94\", \"anomaly_detected\": true, \"economic_risk_score\": 0.3, \"processing_time_ms\": 4.712581634521484, \"emission_success\": true, \"completeness_score\": 1.0, \"performance_summary\": {\"total_invocations\": 1, \"successful_emissions\": 1, \"fallback_activations\": 1, \"anomalies_detected\": 1, \"success_rate\": 1.0, \"fallback_rate\": 1.0, \"anomaly_rate\": 1.0, \"graph_metrics\": {\"node_count\": 1, \"edge_count\": 0, \"density\": 0, \"connected_components\": 1, \"average_clustering\": 0.0, \"temporal_span\": 0.0}}, \"request_id\": \"e3828d13-cdd6-4853-bfe0-9931db39d85d\", \"function_name\": \"HelloWorldFunction\", \"execution_phase\": \"shutdown\", \"anomaly\": \"cold_start\", \"payload_id\": \"scafad_l0_0000\", \"schema_version\": \"v4.2\"}",
+        "headers": {
+          "Content-Type": "application/json",
+          "X-SCAFAD-Version": "v4.2",
+          "X-SCAFAD-Layer": "0",
+          "X-Processing-Time": "4.712581634521484",
+          "X-Telemetry-Id": "e3828d13-cdd6-4853-bfe0-9931db39d85d"
+        }
+      },
+      "scafad_metrics": {
+        "anomaly_detected": true,
+        "telemetry_id": "e3828d13-cdd6-4853-bfe0-9931db39d85d",
+        "processing_time_ms": 4.712581634521484,
+        "economic_risk_score": 0.3,
+        "completeness_score": 1.0
+      }
+    },
+    {
+      "invocation_index": 1,
+      "success": true,
+      "duration": 36.87627124786377,
+      "returncode": 0,
+      "stdout": "{\"statusCode\": 202, \"body\": \"{\\\"message\\\": \\\"SCAFAD Layer 0 - Enhanced telemetry processing complete\\\", \\\"telemetry_id\\\": \\\"933545ba-6d9d-4db8-a9f1-06cbb6d50f16\\\", \\\"node_id\\\": \\\"933545ba-6d9d-4db8-a9f1-06cbb6d50f16_1754703076147583226\\\", \\\"provenance_id\\\": \\\"0df302b6-186e-4bb8-852f-3ae9e8a125c0\\\", \\\"anomaly_detected\\\": true, \\\"economic_risk_score\\\": 0.3, \\\"processing_time_ms\\\": 7.5931549072265625, \\\"emission_success\\\": true, \\\"completeness_score\\\": 1.0, \\\"performance_summary\\\": {\\\"total_invocations\\\": 1, \\\"successful_emissions\\\": 1, \\\"fallback_activations\\\": 1, \\\"anomalies_detected\\\": 1, \\\"success_rate\\\": 1.0, \\\"fallback_rate\\\": 1.0, \\\"anomaly_rate\\\": 1.0, \\\"graph_metrics\\\": {\\\"node_count\\\": 1, \\\"edge_count\\\": 0, \\\"density\\\": 0, \\\"connected_components\\\": 1, \\\"average_clustering\\\": 0.0, \\\"temporal_span\\\": 0.0}}, \\\"request_id\\\": \\\"933545ba-6d9d-4db8-a9f1-06cbb6d50f16\\\", \\\"function_name\\\": \\\"HelloWorldFunction\\\", \\\"execution_phase\\\": \\\"init\\\", \\\"anomaly\\\": \\\"cold_start\\\", \\\"payload_id\\\": \\\"scafad_l0_0001\\\", \\\"schema_version\\\": \\\"v4.2\\\"}\", \"headers\": {\"Content-Type\": \"application/json\", \"X-SCAFAD-Version\": \"v4.2\", \"X-SCAFAD-Layer\": \"0\", \"X-Processing-Time\": \"7.5931549072265625\", \"X-Telemetry-Id\": \"933545ba-6d9d-4db8-a9f1-06cbb6d50f16\"}}",
+      "stderr": "Invoking app.lambda_handler (python3.11)\nLocal image is up-to-date\nUsing local image: public.ecr.aws/lambda/python:3.11-rapid-x86_64.\n\nMounting C:\\Users\\Gutua\\OneDrive\\Documents\\scafad-lambda\\.aws-sam\\build\\HelloWorldFunction as /var/task:ro,delegated, inside runtime container\nSTART RequestId: 7f6c8f48-92a6-4362-86a2-4ac034c9de46 Version: $LATEST\nâœ… SCAFAD Layer 0 vv4.2 loaded successfully\nðŸ“Š 17 components available for import\nðŸ”§ Configuration: NORMAL verbosity\nðŸš€ Ready for serverless anomaly detection\n[SCAFAD_TRACE] ts=1754703076.147 func=HelloWorldFunction phase=ExecutionPhase.INIT anomaly=AnomalyType.CPU_BURST duration=0.147s memory=10649KB fallback=True\nEND RequestId: 933545ba-6d9d-4db8-a9f1-06cbb6d50f16\nREPORT RequestId: 933545ba-6d9d-4db8-a9f1-06cbb6d50f16\tInit Duration: 0.09 ms\tDuration: 26317.76 ms\tBilled Duration: 26318 ms\tMemory Size: 1024 MB\tMax Memory Used: 1024 MB\t\n\n",
+      "timestamp": "2025-08-09T02:31:17.836860",
+      "payload_id": "scafad_l0_0001",
+      "lambda_response": {
+        "statusCode": 202,
+        "body": "{\"message\": \"SCAFAD Layer 0 - Enhanced telemetry processing complete\", \"telemetry_id\": \"933545ba-6d9d-4db8-a9f1-06cbb6d50f16\", \"node_id\": \"933545ba-6d9d-4db8-a9f1-06cbb6d50f16_1754703076147583226\", \"provenance_id\": \"0df302b6-186e-4bb8-852f-3ae9e8a125c0\", \"anomaly_detected\": true, \"economic_risk_score\": 0.3, \"processing_time_ms\": 7.5931549072265625, \"emission_success\": true, \"completeness_score\": 1.0, \"performance_summary\": {\"total_invocations\": 1, \"successful_emissions\": 1, \"fallback_activations\": 1, \"anomalies_detected\": 1, \"success_rate\": 1.0, \"fallback_rate\": 1.0, \"anomaly_rate\": 1.0, \"graph_metrics\": {\"node_count\": 1, \"edge_count\": 0, \"density\": 0, \"connected_components\": 1, \"average_clustering\": 0.0, \"temporal_span\": 0.0}}, \"request_id\": \"933545ba-6d9d-4db8-a9f1-06cbb6d50f16\", \"function_name\": \"HelloWorldFunction\", \"execution_phase\": \"init\", \"anomaly\": \"cold_start\", \"payload_id\": \"scafad_l0_0001\", \"schema_version\": \"v4.2\"}",
+        "headers": {
+          "Content-Type": "application/json",
+          "X-SCAFAD-Version": "v4.2",
+          "X-SCAFAD-Layer": "0",
+          "X-Processing-Time": "7.5931549072265625",
+          "X-Telemetry-Id": "933545ba-6d9d-4db8-a9f1-06cbb6d50f16"
+        }
+      },
+      "scafad_metrics": {
+        "anomaly_detected": true,
+        "telemetry_id": "933545ba-6d9d-4db8-a9f1-06cbb6d50f16",
+        "processing_time_ms": 7.5931549072265625,
+        "economic_risk_score": 0.3,
+        "completeness_score": 1.0
+      }
+    },
+    {
+      "invocation_index": 2,
+      "success": true,
+      "duration": 29.114177703857422,
+      "returncode": 0,
+      "stdout": "{\"statusCode\": 202, \"body\": \"{\\\"message\\\": \\\"SCAFAD Layer 0 - Enhanced telemetry processing complete\\\", \\\"telemetry_id\\\": \\\"6268ece5-cd93-4bad-a1f5-3412298c4e05\\\", \\\"node_id\\\": \\\"6268ece5-cd93-4bad-a1f5-3412298c4e05_1754703105194693403\\\", \\\"provenance_id\\\": \\\"08bbbf99-be94-46f4-9e48-3b4a945cee7b\\\", \\\"anomaly_detected\\\": true, \\\"economic_risk_score\\\": 0.3, \\\"processing_time_ms\\\": 12.192487716674805, \\\"emission_success\\\": true, \\\"completeness_score\\\": 1.0, \\\"performance_summary\\\": {\\\"total_invocations\\\": 1, \\\"successful_emissions\\\": 1, \\\"fallback_activations\\\": 1, \\\"anomalies_detected\\\": 1, \\\"success_rate\\\": 1.0, \\\"fallback_rate\\\": 1.0, \\\"anomaly_rate\\\": 1.0, \\\"graph_metrics\\\": {\\\"node_count\\\": 1, \\\"edge_count\\\": 0, \\\"density\\\": 0, \\\"connected_components\\\": 1, \\\"average_clustering\\\": 0.0, \\\"temporal_span\\\": 0.0}}, \\\"request_id\\\": \\\"6268ece5-cd93-4bad-a1f5-3412298c4e05\\\", \\\"function_name\\\": \\\"HelloWorldFunction\\\", \\\"execution_phase\\\": \\\"invoke\\\", \\\"anomaly\\\": \\\"execution_failure\\\", \\\"payload_id\\\": \\\"scafad_l0_0002\\\", \\\"schema_version\\\": \\\"v4.2\\\"}\", \"headers\": {\"Content-Type\": \"application/json\", \"X-SCAFAD-Version\": \"v4.2\", \"X-SCAFAD-Layer\": \"0\", \"X-Processing-Time\": \"12.192487716674805\", \"X-Telemetry-Id\": \"6268ece5-cd93-4bad-a1f5-3412298c4e05\"}}",
+      "stderr": "Invoking app.lambda_handler (python3.11)\nLocal image is up-to-date\nUsing local image: public.ecr.aws/lambda/python:3.11-rapid-x86_64.\n\nMounting C:\\Users\\Gutua\\OneDrive\\Documents\\scafad-lambda\\.aws-sam\\build\\HelloWorldFunction as /var/task:ro,delegated, inside runtime container\nSTART RequestId: 0ff1adc5-03dd-4dbf-979f-e5c141c3cf3c Version: $LATEST\nâœ… SCAFAD Layer 0 vv4.2 loaded successfully\nðŸ“Š 17 components available for import\nðŸ”§ Configuration: NORMAL verbosity\nðŸš€ Ready for serverless anomaly detection\n[SCAFAD_TRACE] ts=1754703105.194 func=HelloWorldFunction phase=ExecutionPhase.INVOKE anomaly=AnomalyType.IO_INTENSIVE duration=0.332s memory=9011KB fallback=True\nEND RequestId: 6268ece5-cd93-4bad-a1f5-3412298c4e05\nREPORT RequestId: 6268ece5-cd93-4bad-a1f5-3412298c4e05\tInit Duration: 0.16 ms\tDuration: 18891.70 ms\tBilled Duration: 18892 ms\tMemory Size: 1024 MB\tMax Memory Used: 1024 MB\t\n\n",
+      "timestamp": "2025-08-09T02:31:47.206416",
+      "payload_id": "scafad_l0_0002",
+      "lambda_response": {
+        "statusCode": 202,
+        "body": "{\"message\": \"SCAFAD Layer 0 - Enhanced telemetry processing complete\", \"telemetry_id\": \"6268ece5-cd93-4bad-a1f5-3412298c4e05\", \"node_id\": \"6268ece5-cd93-4bad-a1f5-3412298c4e05_1754703105194693403\", \"provenance_id\": \"08bbbf99-be94-46f4-9e48-3b4a945cee7b\", \"anomaly_detected\": true, \"economic_risk_score\": 0.3, \"processing_time_ms\": 12.192487716674805, \"emission_success\": true, \"completeness_score\": 1.0, \"performance_summary\": {\"total_invocations\": 1, \"successful_emissions\": 1, \"fallback_activations\": 1, \"anomalies_detected\": 1, \"success_rate\": 1.0, \"fallback_rate\": 1.0, \"anomaly_rate\": 1.0, \"graph_metrics\": {\"node_count\": 1, \"edge_count\": 0, \"density\": 0, \"connected_components\": 1, \"average_clustering\": 0.0, \"temporal_span\": 0.0}}, \"request_id\": \"6268ece5-cd93-4bad-a1f5-3412298c4e05\", \"function_name\": \"HelloWorldFunction\", \"execution_phase\": \"invoke\", \"anomaly\": \"execution_failure\", \"payload_id\": \"scafad_l0_0002\", \"schema_version\": \"v4.2\"}",
+        "headers": {
+          "Content-Type": "application/json",
+          "X-SCAFAD-Version": "v4.2",
+          "X-SCAFAD-Layer": "0",
+          "X-Processing-Time": "12.192487716674805",
+          "X-Telemetry-Id": "6268ece5-cd93-4bad-a1f5-3412298c4e05"
+        }
+      },
+      "scafad_metrics": {
+        "anomaly_detected": true,
+        "telemetry_id": "6268ece5-cd93-4bad-a1f5-3412298c4e05",
+        "processing_time_ms": 12.192487716674805,
+        "economic_risk_score": 0.3,
+        "completeness_score": 1.0
+      }
+    },
+    {
+      "invocation_index": 3,
+      "success": true,
+      "duration": 17.311407804489136,
+      "returncode": 0,
+      "stdout": "{\"statusCode\": 202, \"body\": \"{\\\"message\\\": \\\"SCAFAD Layer 0 - Enhanced telemetry processing complete\\\", \\\"telemetry_id\\\": \\\"3cadc252-ee7a-40c0-bbdb-cec82448b0c8\\\", \\\"node_id\\\": \\\"3cadc252-ee7a-40c0-bbdb-cec82448b0c8_1754703123029037933\\\", \\\"provenance_id\\\": \\\"ea22fbfe-4a59-4f6b-a181-ec90eb8a034a\\\", \\\"anomaly_detected\\\": true, \\\"economic_risk_score\\\": 0.3, \\\"processing_time_ms\\\": 3.0150413513183594, \\\"emission_success\\\": true, \\\"completeness_score\\\": 1.0, \\\"performance_summary\\\": {\\\"total_invocations\\\": 1, \\\"successful_emissions\\\": 1, \\\"fallback_activations\\\": 1, \\\"anomalies_detected\\\": 1, \\\"success_rate\\\": 1.0, \\\"fallback_rate\\\": 1.0, \\\"anomaly_rate\\\": 1.0, \\\"graph_metrics\\\": {\\\"node_count\\\": 1, \\\"edge_count\\\": 0, \\\"density\\\": 0, \\\"connected_components\\\": 1, \\\"average_clustering\\\": 0.0, \\\"temporal_span\\\": 0.0}}, \\\"request_id\\\": \\\"3cadc252-ee7a-40c0-bbdb-cec82448b0c8\\\", \\\"function_name\\\": \\\"HelloWorldFunction\\\", \\\"execution_phase\\\": \\\"invoke\\\", \\\"anomaly\\\": \\\"timeout_fallback\\\", \\\"payload_id\\\": \\\"scafad_l0_0003\\\", \\\"schema_version\\\": \\\"v4.2\\\"}\", \"headers\": {\"Content-Type\": \"application/json\", \"X-SCAFAD-Version\": \"v4.2\", \"X-SCAFAD-Layer\": \"0\", \"X-Processing-Time\": \"3.0150413513183594\", \"X-Telemetry-Id\": \"3cadc252-ee7a-40c0-bbdb-cec82448b0c8\"}}",
+      "stderr": "Invoking app.lambda_handler (python3.11)\nLocal image is up-to-date\nUsing local image: public.ecr.aws/lambda/python:3.11-rapid-x86_64.\n\nMounting C:\\Users\\Gutua\\OneDrive\\Documents\\scafad-lambda\\.aws-sam\\build\\HelloWorldFunction as /var/task:ro,delegated, inside runtime container\nSTART RequestId: 25ed2aa9-ed4f-44f4-a88b-b49c58131954 Version: $LATEST\nâœ… SCAFAD Layer 0 vv4.2 loaded successfully\nðŸ“Š 17 components available for import\nðŸ”§ Configuration: NORMAL verbosity\nðŸš€ Ready for serverless anomaly detection\n[SCAFAD_TRACE] ts=1754703123.029 func=HelloWorldFunction phase=ExecutionPhase.INVOKE anomaly=AnomalyType.IO_INTENSIVE duration=0.310s memory=9011KB fallback=True\nEND RequestId: 3cadc252-ee7a-40c0-bbdb-cec82448b0c8\nREPORT RequestId: 3cadc252-ee7a-40c0-bbdb-cec82448b0c8\tInit Duration: 0.08 ms\tDuration: 7540.79 ms\tBilled Duration: 7541 ms\tMemory Size: 1024 MB\tMax Memory Used: 1024 MB\t\n\n",
+      "timestamp": "2025-08-09T02:32:04.779834",
+      "payload_id": "scafad_l0_0003",
+      "lambda_response": {
+        "statusCode": 202,
+        "body": "{\"message\": \"SCAFAD Layer 0 - Enhanced telemetry processing complete\", \"telemetry_id\": \"3cadc252-ee7a-40c0-bbdb-cec82448b0c8\", \"node_id\": \"3cadc252-ee7a-40c0-bbdb-cec82448b0c8_1754703123029037933\", \"provenance_id\": \"ea22fbfe-4a59-4f6b-a181-ec90eb8a034a\", \"anomaly_detected\": true, \"economic_risk_score\": 0.3, \"processing_time_ms\": 3.0150413513183594, \"emission_success\": true, \"completeness_score\": 1.0, \"performance_summary\": {\"total_invocations\": 1, \"successful_emissions\": 1, \"fallback_activations\": 1, \"anomalies_detected\": 1, \"success_rate\": 1.0, \"fallback_rate\": 1.0, \"anomaly_rate\": 1.0, \"graph_metrics\": {\"node_count\": 1, \"edge_count\": 0, \"density\": 0, \"connected_components\": 1, \"average_clustering\": 0.0, \"temporal_span\": 0.0}}, \"request_id\": \"3cadc252-ee7a-40c0-bbdb-cec82448b0c8\", \"function_name\": \"HelloWorldFunction\", \"execution_phase\": \"invoke\", \"anomaly\": \"timeout_fallback\", \"payload_id\": \"scafad_l0_0003\", \"schema_version\": \"v4.2\"}",
+        "headers": {
+          "Content-Type": "application/json",
+          "X-SCAFAD-Version": "v4.2",
+          "X-SCAFAD-Layer": "0",
+          "X-Processing-Time": "3.0150413513183594",
+          "X-Telemetry-Id": "3cadc252-ee7a-40c0-bbdb-cec82448b0c8"
+        }
+      },
+      "scafad_metrics": {
+        "anomaly_detected": true,
+        "telemetry_id": "3cadc252-ee7a-40c0-bbdb-cec82448b0c8",
+        "processing_time_ms": 3.0150413513183594,
+        "economic_risk_score": 0.3,
+        "completeness_score": 1.0
+      }
+    },
+    {
+      "invocation_index": 4,
+      "success": true,
+      "duration": 18.17598009109497,
+      "returncode": 0,
+      "stdout": "{\"statusCode\": 202, \"body\": \"{\\\"message\\\": \\\"SCAFAD Layer 0 - Enhanced telemetry processing complete\\\", \\\"telemetry_id\\\": \\\"051a560d-ba68-43d5-ba4b-62fe735e03e3\\\", \\\"node_id\\\": \\\"051a560d-ba68-43d5-ba4b-62fe735e03e3_1754703141455996548\\\", \\\"provenance_id\\\": \\\"2b64dcac-4c83-4e7d-8009-60b01b54d73e\\\", \\\"anomaly_detected\\\": true, \\\"economic_risk_score\\\": 0.3, \\\"processing_time_ms\\\": 2.919435501098633, \\\"emission_success\\\": true, \\\"completeness_score\\\": 1.0, \\\"performance_summary\\\": {\\\"total_invocations\\\": 1, \\\"successful_emissions\\\": 1, \\\"fallback_activations\\\": 1, \\\"anomalies_detected\\\": 1, \\\"success_rate\\\": 1.0, \\\"fallback_rate\\\": 1.0, \\\"anomaly_rate\\\": 1.0, \\\"graph_metrics\\\": {\\\"node_count\\\": 1, \\\"edge_count\\\": 0, \\\"density\\\": 0, \\\"connected_components\\\": 1, \\\"average_clustering\\\": 0.0, \\\"temporal_span\\\": 0.0}}, \\\"request_id\\\": \\\"051a560d-ba68-43d5-ba4b-62fe735e03e3\\\", \\\"function_name\\\": \\\"HelloWorldFunction\\\", \\\"execution_phase\\\": \\\"init\\\", \\\"anomaly\\\": \\\"execution_failure\\\", \\\"payload_id\\\": \\\"scafad_l0_0004\\\", \\\"schema_version\\\": \\\"v4.2\\\"}\", \"headers\": {\"Content-Type\": \"application/json\", \"X-SCAFAD-Version\": \"v4.2\", \"X-SCAFAD-Layer\": \"0\", \"X-Processing-Time\": \"2.919435501098633\", \"X-Telemetry-Id\": \"051a560d-ba68-43d5-ba4b-62fe735e03e3\"}}",
+      "stderr": "Invoking app.lambda_handler (python3.11)\nLocal image is up-to-date\nUsing local image: public.ecr.aws/lambda/python:3.11-rapid-x86_64.\n\nMounting C:\\Users\\Gutua\\OneDrive\\Documents\\scafad-lambda\\.aws-sam\\build\\HelloWorldFunction as /var/task:ro,delegated, inside runtime container\nSTART RequestId: 01b3fbae-3c1a-43b7-9c2a-1aaffe5e9a74 Version: $LATEST\nâœ… SCAFAD Layer 0 vv4.2 loaded successfully\nðŸ“Š 17 components available for import\nðŸ”§ Configuration: NORMAL verbosity\nðŸš€ Ready for serverless anomaly detection\n[SCAFAD_TRACE] ts=1754703141.456 func=HelloWorldFunction phase=ExecutionPhase.INIT anomaly=AnomalyType.IO_INTENSIVE duration=0.373s memory=9011KB fallback=True\nEND RequestId: 051a560d-ba68-43d5-ba4b-62fe735e03e3\nREPORT RequestId: 051a560d-ba68-43d5-ba4b-62fe735e03e3\tInit Duration: 0.10 ms\tDuration: 8043.24 ms\tBilled Duration: 8044 ms\tMemory Size: 1024 MB\tMax Memory Used: 1024 MB\t\n\n",
+      "timestamp": "2025-08-09T02:32:23.210135",
+      "payload_id": "scafad_l0_0004",
+      "lambda_response": {
+        "statusCode": 202,
+        "body": "{\"message\": \"SCAFAD Layer 0 - Enhanced telemetry processing complete\", \"telemetry_id\": \"051a560d-ba68-43d5-ba4b-62fe735e03e3\", \"node_id\": \"051a560d-ba68-43d5-ba4b-62fe735e03e3_1754703141455996548\", \"provenance_id\": \"2b64dcac-4c83-4e7d-8009-60b01b54d73e\", \"anomaly_detected\": true, \"economic_risk_score\": 0.3, \"processing_time_ms\": 2.919435501098633, \"emission_success\": true, \"completeness_score\": 1.0, \"performance_summary\": {\"total_invocations\": 1, \"successful_emissions\": 1, \"fallback_activations\": 1, \"anomalies_detected\": 1, \"success_rate\": 1.0, \"fallback_rate\": 1.0, \"anomaly_rate\": 1.0, \"graph_metrics\": {\"node_count\": 1, \"edge_count\": 0, \"density\": 0, \"connected_components\": 1, \"average_clustering\": 0.0, \"temporal_span\": 0.0}}, \"request_id\": \"051a560d-ba68-43d5-ba4b-62fe735e03e3\", \"function_name\": \"HelloWorldFunction\", \"execution_phase\": \"init\", \"anomaly\": \"execution_failure\", \"payload_id\": \"scafad_l0_0004\", \"schema_version\": \"v4.2\"}",
+        "headers": {
+          "Content-Type": "application/json",
+          "X-SCAFAD-Version": "v4.2",
+          "X-SCAFAD-Layer": "0",
+          "X-Processing-Time": "2.919435501098633",
+          "X-Telemetry-Id": "051a560d-ba68-43d5-ba4b-62fe735e03e3"
+        }
+      },
+      "scafad_metrics": {
+        "anomaly_detected": true,
+        "telemetry_id": "051a560d-ba68-43d5-ba4b-62fe735e03e3",
+        "processing_time_ms": 2.919435501098633,
+        "economic_risk_score": 0.3,
+        "completeness_score": 1.0
+      }
+    },
+    {
+      "invocation_index": 5,
+      "success": true,
+      "duration": 20.437342882156372,
+      "returncode": 0,
+      "stdout": "{\"statusCode\": 202, \"body\": \"{\\\"message\\\": \\\"SCAFAD Layer 0 - Enhanced telemetry processing complete\\\", \\\"telemetry_id\\\": \\\"4aa8053a-5ce8-467f-bb1b-8a8f7bbffc1f\\\", \\\"node_id\\\": \\\"4aa8053a-5ce8-467f-bb1b-8a8f7bbffc1f_1754703161802836049\\\", \\\"provenance_id\\\": \\\"738c194b-85be-46bc-a49f-adf22a197068\\\", \\\"anomaly_detected\\\": true, \\\"economic_risk_score\\\": 0.3, \\\"processing_time_ms\\\": 3.3643245697021484, \\\"emission_success\\\": true, \\\"completeness_score\\\": 1.0, \\\"performance_summary\\\": {\\\"total_invocations\\\": 1, \\\"successful_emissions\\\": 1, \\\"fallback_activations\\\": 1, \\\"anomalies_detected\\\": 1, \\\"success_rate\\\": 1.0, \\\"fallback_rate\\\": 1.0, \\\"anomaly_rate\\\": 1.0, \\\"graph_metrics\\\": {\\\"node_count\\\": 1, \\\"edge_count\\\": 0, \\\"density\\\": 0, \\\"connected_components\\\": 1, \\\"average_clustering\\\": 0.0, \\\"temporal_span\\\": 0.0}}, \\\"request_id\\\": \\\"4aa8053a-5ce8-467f-bb1b-8a8f7bbffc1f\\\", \\\"function_name\\\": \\\"HelloWorldFunction\\\", \\\"execution_phase\\\": \\\"invoke\\\", \\\"anomaly\\\": \\\"timeout_fallback\\\", \\\"payload_id\\\": \\\"scafad_l0_0005\\\", \\\"schema_version\\\": \\\"v4.2\\\"}\", \"headers\": {\"Content-Type\": \"application/json\", \"X-SCAFAD-Version\": \"v4.2\", \"X-SCAFAD-Layer\": \"0\", \"X-Processing-Time\": \"3.3643245697021484\", \"X-Telemetry-Id\": \"4aa8053a-5ce8-467f-bb1b-8a8f7bbffc1f\"}}",
+      "stderr": "Invoking app.lambda_handler (python3.11)\nLocal image is up-to-date\nUsing local image: public.ecr.aws/lambda/python:3.11-rapid-x86_64.\n\nMounting C:\\Users\\Gutua\\OneDrive\\Documents\\scafad-lambda\\.aws-sam\\build\\HelloWorldFunction as /var/task:ro,delegated, inside runtime container\nSTART RequestId: c2e537b5-6faa-4297-8141-ac2f5f33dc66 Version: $LATEST\nâœ… SCAFAD Layer 0 vv4.2 loaded successfully\nðŸ“Š 17 components available for import\nðŸ”§ Configuration: NORMAL verbosity\nðŸš€ Ready for serverless anomaly detection\n[SCAFAD_TRACE] ts=1754703161.803 func=HelloWorldFunction phase=ExecutionPhase.INVOKE anomaly=AnomalyType.CPU_BURST duration=0.158s memory=10649KB fallback=True\nEND RequestId: 4aa8053a-5ce8-467f-bb1b-8a8f7bbffc1f\nREPORT RequestId: 4aa8053a-5ce8-467f-bb1b-8a8f7bbffc1f\tInit Duration: 0.16 ms\tDuration: 9532.85 ms\tBilled Duration: 9533 ms\tMemory Size: 1024 MB\tMax Memory Used: 1024 MB\t\n\n",
+      "timestamp": "2025-08-09T02:32:43.903861",
+      "payload_id": "scafad_l0_0005",
+      "lambda_response": {
+        "statusCode": 202,
+        "body": "{\"message\": \"SCAFAD Layer 0 - Enhanced telemetry processing complete\", \"telemetry_id\": \"4aa8053a-5ce8-467f-bb1b-8a8f7bbffc1f\", \"node_id\": \"4aa8053a-5ce8-467f-bb1b-8a8f7bbffc1f_1754703161802836049\", \"provenance_id\": \"738c194b-85be-46bc-a49f-adf22a197068\", \"anomaly_detected\": true, \"economic_risk_score\": 0.3, \"processing_time_ms\": 3.3643245697021484, \"emission_success\": true, \"completeness_score\": 1.0, \"performance_summary\": {\"total_invocations\": 1, \"successful_emissions\": 1, \"fallback_activations\": 1, \"anomalies_detected\": 1, \"success_rate\": 1.0, \"fallback_rate\": 1.0, \"anomaly_rate\": 1.0, \"graph_metrics\": {\"node_count\": 1, \"edge_count\": 0, \"density\": 0, \"connected_components\": 1, \"average_clustering\": 0.0, \"temporal_span\": 0.0}}, \"request_id\": \"4aa8053a-5ce8-467f-bb1b-8a8f7bbffc1f\", \"function_name\": \"HelloWorldFunction\", \"execution_phase\": \"invoke\", \"anomaly\": \"timeout_fallback\", \"payload_id\": \"scafad_l0_0005\", \"schema_version\": \"v4.2\"}",
+        "headers": {
+          "Content-Type": "application/json",
+          "X-SCAFAD-Version": "v4.2",
+          "X-SCAFAD-Layer": "0",
+          "X-Processing-Time": "3.3643245697021484",
+          "X-Telemetry-Id": "4aa8053a-5ce8-467f-bb1b-8a8f7bbffc1f"
+        }
+      },
+      "scafad_metrics": {
+        "anomaly_detected": true,
+        "telemetry_id": "4aa8053a-5ce8-467f-bb1b-8a8f7bbffc1f",
+        "processing_time_ms": 3.3643245697021484,
+        "economic_risk_score": 0.3,
+        "completeness_score": 1.0
+      }
+    },
+    {
+      "invocation_index": 6,
+      "success": true,
+      "duration": 16.182074069976807,
+      "returncode": 0,
+      "stdout": "{\"statusCode\": 202, \"body\": \"{\\\"message\\\": \\\"SCAFAD Layer 0 - Enhanced telemetry processing complete\\\", \\\"telemetry_id\\\": \\\"f563df8e-17ff-4950-ac1e-82b25c094f3a\\\", \\\"node_id\\\": \\\"f563df8e-17ff-4950-ac1e-82b25c094f3a_1754703178381069686\\\", \\\"provenance_id\\\": \\\"84729d1e-b762-4d60-b265-ae8b3bccba5f\\\", \\\"anomaly_detected\\\": true, \\\"economic_risk_score\\\": 0.3, \\\"processing_time_ms\\\": 4.609823226928711, \\\"emission_success\\\": true, \\\"completeness_score\\\": 1.0, \\\"performance_summary\\\": {\\\"total_invocations\\\": 1, \\\"successful_emissions\\\": 1, \\\"fallback_activations\\\": 1, \\\"anomalies_detected\\\": 1, \\\"success_rate\\\": 1.0, \\\"fallback_rate\\\": 1.0, \\\"anomaly_rate\\\": 1.0, \\\"graph_metrics\\\": {\\\"node_count\\\": 1, \\\"edge_count\\\": 0, \\\"density\\\": 0, \\\"connected_components\\\": 1, \\\"average_clustering\\\": 0.0, \\\"temporal_span\\\": 0.0}}, \\\"request_id\\\": \\\"f563df8e-17ff-4950-ac1e-82b25c094f3a\\\", \\\"function_name\\\": \\\"HelloWorldFunction\\\", \\\"execution_phase\\\": \\\"invoke\\\", \\\"anomaly\\\": \\\"cpu_burst\\\", \\\"payload_id\\\": \\\"scafad_l0_0006\\\", \\\"schema_version\\\": \\\"v4.2\\\"}\", \"headers\": {\"Content-Type\": \"application/json\", \"X-SCAFAD-Version\": \"v4.2\", \"X-SCAFAD-Layer\": \"0\", \"X-Processing-Time\": \"4.609823226928711\", \"X-Telemetry-Id\": \"f563df8e-17ff-4950-ac1e-82b25c094f3a\"}}",
+      "stderr": "Invoking app.lambda_handler (python3.11)\nLocal image is up-to-date\nUsing local image: public.ecr.aws/lambda/python:3.11-rapid-x86_64.\n\nMounting C:\\Users\\Gutua\\OneDrive\\Documents\\scafad-lambda\\.aws-sam\\build\\HelloWorldFunction as /var/task:ro,delegated, inside runtime container\nSTART RequestId: 77eb54f7-2838-4dc1-b07e-4b5ab76f3ee2 Version: $LATEST\nâœ… SCAFAD Layer 0 vv4.2 loaded successfully\nðŸ“Š 17 components available for import\nðŸ”§ Configuration: NORMAL verbosity\nðŸš€ Ready for serverless anomaly detection\n[SCAFAD_TRACE] ts=1754703178.381 func=HelloWorldFunction phase=ExecutionPhase.INVOKE anomaly=AnomalyType.IO_INTENSIVE duration=0.229s memory=9011KB fallback=True\nEND RequestId: f563df8e-17ff-4950-ac1e-82b25c094f3a\nREPORT RequestId: f563df8e-17ff-4950-ac1e-82b25c094f3a\tInit Duration: 0.06 ms\tDuration: 5452.28 ms\tBilled Duration: 5453 ms\tMemory Size: 1024 MB\tMax Memory Used: 1024 MB\t\n\n",
+      "timestamp": "2025-08-09T02:33:00.352939",
+      "payload_id": "scafad_l0_0006",
+      "lambda_response": {
+        "statusCode": 202,
+        "body": "{\"message\": \"SCAFAD Layer 0 - Enhanced telemetry processing complete\", \"telemetry_id\": \"f563df8e-17ff-4950-ac1e-82b25c094f3a\", \"node_id\": \"f563df8e-17ff-4950-ac1e-82b25c094f3a_1754703178381069686\", \"provenance_id\": \"84729d1e-b762-4d60-b265-ae8b3bccba5f\", \"anomaly_detected\": true, \"economic_risk_score\": 0.3, \"processing_time_ms\": 4.609823226928711, \"emission_success\": true, \"completeness_score\": 1.0, \"performance_summary\": {\"total_invocations\": 1, \"successful_emissions\": 1, \"fallback_activations\": 1, \"anomalies_detected\": 1, \"success_rate\": 1.0, \"fallback_rate\": 1.0, \"anomaly_rate\": 1.0, \"graph_metrics\": {\"node_count\": 1, \"edge_count\": 0, \"density\": 0, \"connected_components\": 1, \"average_clustering\": 0.0, \"temporal_span\": 0.0}}, \"request_id\": \"f563df8e-17ff-4950-ac1e-82b25c094f3a\", \"function_name\": \"HelloWorldFunction\", \"execution_phase\": \"invoke\", \"anomaly\": \"cpu_burst\", \"payload_id\": \"scafad_l0_0006\", \"schema_version\": \"v4.2\"}",
+        "headers": {
+          "Content-Type": "application/json",
+          "X-SCAFAD-Version": "v4.2",
+          "X-SCAFAD-Layer": "0",
+          "X-Processing-Time": "4.609823226928711",
+          "X-Telemetry-Id": "f563df8e-17ff-4950-ac1e-82b25c094f3a"
+        }
+      },
+      "scafad_metrics": {
+        "anomaly_detected": true,
+        "telemetry_id": "f563df8e-17ff-4950-ac1e-82b25c094f3a",
+        "processing_time_ms": 4.609823226928711,
+        "economic_risk_score": 0.3,
+        "completeness_score": 1.0
+      }
+    },
+    {
+      "invocation_index": 7,
+      "success": true,
+      "duration": 16.24809741973877,
+      "returncode": 0,
+      "stdout": "{\"statusCode\": 202, \"body\": \"{\\\"message\\\": \\\"SCAFAD Layer 0 - Enhanced telemetry processing complete\\\", \\\"telemetry_id\\\": \\\"e568da67-c17b-4a70-9fa6-7369a8a7ab0f\\\", \\\"node_id\\\": \\\"e568da67-c17b-4a70-9fa6-7369a8a7ab0f_1754703195041929645\\\", \\\"provenance_id\\\": \\\"320f6e03-2167-4870-9976-bff4b2f18f56\\\", \\\"anomaly_detected\\\": true, \\\"economic_risk_score\\\": 0.3, \\\"processing_time_ms\\\": 3.4232139587402344, \\\"emission_success\\\": true, \\\"completeness_score\\\": 1.0, \\\"performance_summary\\\": {\\\"total_invocations\\\": 1, \\\"successful_emissions\\\": 1, \\\"fallback_activations\\\": 1, \\\"anomalies_detected\\\": 1, \\\"success_rate\\\": 1.0, \\\"fallback_rate\\\": 1.0, \\\"anomaly_rate\\\": 1.0, \\\"graph_metrics\\\": {\\\"node_count\\\": 1, \\\"edge_count\\\": 0, \\\"density\\\": 0, \\\"connected_components\\\": 1, \\\"average_clustering\\\": 0.0, \\\"temporal_span\\\": 0.0}}, \\\"request_id\\\": \\\"e568da67-c17b-4a70-9fa6-7369a8a7ab0f\\\", \\\"function_name\\\": \\\"HelloWorldFunction\\\", \\\"execution_phase\\\": \\\"shutdown\\\", \\\"anomaly\\\": \\\"network_anomaly\\\", \\\"payload_id\\\": \\\"scafad_l0_0007\\\", \\\"schema_version\\\": \\\"v4.2\\\"}\", \"headers\": {\"Content-Type\": \"application/json\", \"X-SCAFAD-Version\": \"v4.2\", \"X-SCAFAD-Layer\": \"0\", \"X-Processing-Time\": \"3.4232139587402344\", \"X-Telemetry-Id\": \"e568da67-c17b-4a70-9fa6-7369a8a7ab0f\"}}",
+      "stderr": "Invoking app.lambda_handler (python3.11)\nLocal image is up-to-date\nUsing local image: public.ecr.aws/lambda/python:3.11-rapid-x86_64.\n\nMounting C:\\Users\\Gutua\\OneDrive\\Documents\\scafad-lambda\\.aws-sam\\build\\HelloWorldFunction as /var/task:ro,delegated, inside runtime container\nSTART RequestId: 06555012-c0b4-4fd4-a298-9f6d5d558e62 Version: $LATEST\nâœ… SCAFAD Layer 0 vv4.2 loaded successfully\nðŸ“Š 17 components available for import\nðŸ”§ Configuration: NORMAL verbosity\nðŸš€ Ready for serverless anomaly detection\n[SCAFAD_TRACE] ts=1754703195.042 func=HelloWorldFunction phase=ExecutionPhase.SHUTDOWN anomaly=AnomalyType.IO_INTENSIVE duration=0.397s memory=9011KB fallback=True\nEND RequestId: e568da67-c17b-4a70-9fa6-7369a8a7ab0f\nREPORT RequestId: e568da67-c17b-4a70-9fa6-7369a8a7ab0f\tInit Duration: 0.08 ms\tDuration: 6336.62 ms\tBilled Duration: 6337 ms\tMemory Size: 1024 MB\tMax Memory Used: 1024 MB\t\n\n",
+      "timestamp": "2025-08-09T02:33:16.857952",
+      "payload_id": "scafad_l0_0007",
+      "lambda_response": {
+        "statusCode": 202,
+        "body": "{\"message\": \"SCAFAD Layer 0 - Enhanced telemetry processing complete\", \"telemetry_id\": \"e568da67-c17b-4a70-9fa6-7369a8a7ab0f\", \"node_id\": \"e568da67-c17b-4a70-9fa6-7369a8a7ab0f_1754703195041929645\", \"provenance_id\": \"320f6e03-2167-4870-9976-bff4b2f18f56\", \"anomaly_detected\": true, \"economic_risk_score\": 0.3, \"processing_time_ms\": 3.4232139587402344, \"emission_success\": true, \"completeness_score\": 1.0, \"performance_summary\": {\"total_invocations\": 1, \"successful_emissions\": 1, \"fallback_activations\": 1, \"anomalies_detected\": 1, \"success_rate\": 1.0, \"fallback_rate\": 1.0, \"anomaly_rate\": 1.0, \"graph_metrics\": {\"node_count\": 1, \"edge_count\": 0, \"density\": 0, \"connected_components\": 1, \"average_clustering\": 0.0, \"temporal_span\": 0.0}}, \"request_id\": \"e568da67-c17b-4a70-9fa6-7369a8a7ab0f\", \"function_name\": \"HelloWorldFunction\", \"execution_phase\": \"shutdown\", \"anomaly\": \"network_anomaly\", \"payload_id\": \"scafad_l0_0007\", \"schema_version\": \"v4.2\"}",
+        "headers": {
+          "Content-Type": "application/json",
+          "X-SCAFAD-Version": "v4.2",
+          "X-SCAFAD-Layer": "0",
+          "X-Processing-Time": "3.4232139587402344",
+          "X-Telemetry-Id": "e568da67-c17b-4a70-9fa6-7369a8a7ab0f"
+        }
+      },
+      "scafad_metrics": {
+        "anomaly_detected": true,
+        "telemetry_id": "e568da67-c17b-4a70-9fa6-7369a8a7ab0f",
+        "processing_time_ms": 3.4232139587402344,
+        "economic_risk_score": 0.3,
+        "completeness_score": 1.0
+      }
+    },
+    {
+      "invocation_index": 8,
+      "success": true,
+      "duration": 18.696787118911743,
+      "returncode": 0,
+      "stdout": "{\"statusCode\": 202, \"body\": \"{\\\"message\\\": \\\"SCAFAD Layer 0 - Enhanced telemetry processing complete\\\", \\\"telemetry_id\\\": \\\"0910b61f-164a-46cc-9448-d001ebb67945\\\", \\\"node_id\\\": \\\"0910b61f-164a-46cc-9448-d001ebb67945_1754703213944201127\\\", \\\"provenance_id\\\": \\\"987fd94e-e66e-43c5-99a2-e59dcc2f2f99\\\", \\\"anomaly_detected\\\": true, \\\"economic_risk_score\\\": 0.3, \\\"processing_time_ms\\\": 4.762411117553711, \\\"emission_success\\\": true, \\\"completeness_score\\\": 1.0, \\\"performance_summary\\\": {\\\"total_invocations\\\": 1, \\\"successful_emissions\\\": 1, \\\"fallback_activations\\\": 1, \\\"anomalies_detected\\\": 1, \\\"success_rate\\\": 1.0, \\\"fallback_rate\\\": 1.0, \\\"anomaly_rate\\\": 1.0, \\\"graph_metrics\\\": {\\\"node_count\\\": 1, \\\"edge_count\\\": 0, \\\"density\\\": 0, \\\"connected_components\\\": 1, \\\"average_clustering\\\": 0.0, \\\"temporal_span\\\": 0.0}}, \\\"request_id\\\": \\\"0910b61f-164a-46cc-9448-d001ebb67945\\\", \\\"function_name\\\": \\\"HelloWorldFunction\\\", \\\"execution_phase\\\": \\\"shutdown\\\", \\\"anomaly\\\": \\\"timeout_fallback\\\", \\\"payload_id\\\": \\\"scafad_l0_0008\\\", \\\"schema_version\\\": \\\"v4.2\\\"}\", \"headers\": {\"Content-Type\": \"application/json\", \"X-SCAFAD-Version\": \"v4.2\", \"X-SCAFAD-Layer\": \"0\", \"X-Processing-Time\": \"4.762411117553711\", \"X-Telemetry-Id\": \"0910b61f-164a-46cc-9448-d001ebb67945\"}}",
+      "stderr": "Invoking app.lambda_handler (python3.11)\nLocal image is up-to-date\nUsing local image: public.ecr.aws/lambda/python:3.11-rapid-x86_64.\n\nMounting C:\\Users\\Gutua\\OneDrive\\Documents\\scafad-lambda\\.aws-sam\\build\\HelloWorldFunction as /var/task:ro,delegated, inside runtime container\nSTART RequestId: d6475d80-f4fd-4690-9d38-4692e942e798 Version: $LATEST\nâœ… SCAFAD Layer 0 vv4.2 loaded successfully\nðŸ“Š 17 components available for import\nðŸ”§ Configuration: NORMAL verbosity\nðŸš€ Ready for serverless anomaly detection\n[SCAFAD_TRACE] ts=1754703213.944 func=HelloWorldFunction phase=ExecutionPhase.SHUTDOWN anomaly=AnomalyType.COLD_START duration=0.452s memory=14945KB fallback=True\nEND RequestId: 0910b61f-164a-46cc-9448-d001ebb67945\nREPORT RequestId: 0910b61f-164a-46cc-9448-d001ebb67945\tInit Duration: 0.09 ms\tDuration: 7820.74 ms\tBilled Duration: 7821 ms\tMemory Size: 1024 MB\tMax Memory Used: 1024 MB\t\n\n",
+      "timestamp": "2025-08-09T02:33:35.808753",
+      "payload_id": "scafad_l0_0008",
+      "lambda_response": {
+        "statusCode": 202,
+        "body": "{\"message\": \"SCAFAD Layer 0 - Enhanced telemetry processing complete\", \"telemetry_id\": \"0910b61f-164a-46cc-9448-d001ebb67945\", \"node_id\": \"0910b61f-164a-46cc-9448-d001ebb67945_1754703213944201127\", \"provenance_id\": \"987fd94e-e66e-43c5-99a2-e59dcc2f2f99\", \"anomaly_detected\": true, \"economic_risk_score\": 0.3, \"processing_time_ms\": 4.762411117553711, \"emission_success\": true, \"completeness_score\": 1.0, \"performance_summary\": {\"total_invocations\": 1, \"successful_emissions\": 1, \"fallback_activations\": 1, \"anomalies_detected\": 1, \"success_rate\": 1.0, \"fallback_rate\": 1.0, \"anomaly_rate\": 1.0, \"graph_metrics\": {\"node_count\": 1, \"edge_count\": 0, \"density\": 0, \"connected_components\": 1, \"average_clustering\": 0.0, \"temporal_span\": 0.0}}, \"request_id\": \"0910b61f-164a-46cc-9448-d001ebb67945\", \"function_name\": \"HelloWorldFunction\", \"execution_phase\": \"shutdown\", \"anomaly\": \"timeout_fallback\", \"payload_id\": \"scafad_l0_0008\", \"schema_version\": \"v4.2\"}",
+        "headers": {
+          "Content-Type": "application/json",
+          "X-SCAFAD-Version": "v4.2",
+          "X-SCAFAD-Layer": "0",
+          "X-Processing-Time": "4.762411117553711",
+          "X-Telemetry-Id": "0910b61f-164a-46cc-9448-d001ebb67945"
+        }
+      },
+      "scafad_metrics": {
+        "anomaly_detected": true,
+        "telemetry_id": "0910b61f-164a-46cc-9448-d001ebb67945",
+        "processing_time_ms": 4.762411117553711,
+        "economic_risk_score": 0.3,
+        "completeness_score": 1.0
+      }
+    },
+    {
+      "invocation_index": 9,
+      "success": true,
+      "duration": 18.268545627593994,
+      "returncode": 0,
+      "stdout": "{\"statusCode\": 202, \"body\": \"{\\\"message\\\": \\\"SCAFAD Layer 0 - Enhanced telemetry processing complete\\\", \\\"telemetry_id\\\": \\\"acf58812-a46a-42f4-b024-3c5a346d2979\\\", \\\"node_id\\\": \\\"acf58812-a46a-42f4-b024-3c5a346d2979_1754703232557650171\\\", \\\"provenance_id\\\": \\\"2679c190-09db-4593-bb82-985d7c58e734\\\", \\\"anomaly_detected\\\": true, \\\"economic_risk_score\\\": 0.3, \\\"processing_time_ms\\\": 2.9299259185791016, \\\"emission_success\\\": true, \\\"completeness_score\\\": 1.0, \\\"performance_summary\\\": {\\\"total_invocations\\\": 1, \\\"successful_emissions\\\": 1, \\\"fallback_activations\\\": 1, \\\"anomalies_detected\\\": 1, \\\"success_rate\\\": 1.0, \\\"fallback_rate\\\": 1.0, \\\"anomaly_rate\\\": 1.0, \\\"graph_metrics\\\": {\\\"node_count\\\": 1, \\\"edge_count\\\": 0, \\\"density\\\": 0, \\\"connected_components\\\": 1, \\\"average_clustering\\\": 0.0, \\\"temporal_span\\\": 0.0}}, \\\"request_id\\\": \\\"acf58812-a46a-42f4-b024-3c5a346d2979\\\", \\\"function_name\\\": \\\"HelloWorldFunction\\\", \\\"execution_phase\\\": \\\"shutdown\\\", \\\"anomaly\\\": \\\"benign\\\", \\\"payload_id\\\": \\\"scafad_l0_0009\\\", \\\"schema_version\\\": \\\"v4.2\\\"}\", \"headers\": {\"Content-Type\": \"application/json\", \"X-SCAFAD-Version\": \"v4.2\", \"X-SCAFAD-Layer\": \"0\", \"X-Processing-Time\": \"2.9299259185791016\", \"X-Telemetry-Id\": \"acf58812-a46a-42f4-b024-3c5a346d2979\"}}",
+      "stderr": "Invoking app.lambda_handler (python3.11)\nLocal image is up-to-date\nUsing local image: public.ecr.aws/lambda/python:3.11-rapid-x86_64.\n\nMounting C:\\Users\\Gutua\\OneDrive\\Documents\\scafad-lambda\\.aws-sam\\build\\HelloWorldFunction as /var/task:ro,delegated, inside runtime container\nSTART RequestId: be2eb18c-d58b-4e99-9780-73104d655864 Version: $LATEST\nâœ… SCAFAD Layer 0 vv4.2 loaded successfully\nðŸ“Š 17 components available for import\nðŸ”§ Configuration: NORMAL verbosity\nðŸš€ Ready for serverless anomaly detection\n[SCAFAD_TRACE] ts=1754703232.558 func=HelloWorldFunction phase=ExecutionPhase.SHUTDOWN anomaly=AnomalyType.MEMORY_SPIKE duration=0.138s memory=46230KB fallback=True\nEND RequestId: acf58812-a46a-42f4-b024-3c5a346d2979\nREPORT RequestId: acf58812-a46a-42f4-b024-3c5a346d2979\tInit Duration: 0.10 ms\tDuration: 7543.03 ms\tBilled Duration: 7544 ms\tMemory Size: 1024 MB\tMax Memory Used: 1024 MB\t\n\n",
+      "timestamp": "2025-08-09T02:33:54.332932",
+      "payload_id": "scafad_l0_0009",
+      "lambda_response": {
+        "statusCode": 202,
+        "body": "{\"message\": \"SCAFAD Layer 0 - Enhanced telemetry processing complete\", \"telemetry_id\": \"acf58812-a46a-42f4-b024-3c5a346d2979\", \"node_id\": \"acf58812-a46a-42f4-b024-3c5a346d2979_1754703232557650171\", \"provenance_id\": \"2679c190-09db-4593-bb82-985d7c58e734\", \"anomaly_detected\": true, \"economic_risk_score\": 0.3, \"processing_time_ms\": 2.9299259185791016, \"emission_success\": true, \"completeness_score\": 1.0, \"performance_summary\": {\"total_invocations\": 1, \"successful_emissions\": 1, \"fallback_activations\": 1, \"anomalies_detected\": 1, \"success_rate\": 1.0, \"fallback_rate\": 1.0, \"anomaly_rate\": 1.0, \"graph_metrics\": {\"node_count\": 1, \"edge_count\": 0, \"density\": 0, \"connected_components\": 1, \"average_clustering\": 0.0, \"temporal_span\": 0.0}}, \"request_id\": \"acf58812-a46a-42f4-b024-3c5a346d2979\", \"function_name\": \"HelloWorldFunction\", \"execution_phase\": \"shutdown\", \"anomaly\": \"benign\", \"payload_id\": \"scafad_l0_0009\", \"schema_version\": \"v4.2\"}",
+        "headers": {
+          "Content-Type": "application/json",
+          "X-SCAFAD-Version": "v4.2",
+          "X-SCAFAD-Layer": "0",
+          "X-Processing-Time": "2.9299259185791016",
+          "X-Telemetry-Id": "acf58812-a46a-42f4-b024-3c5a346d2979"
+        }
+      },
+      "scafad_metrics": {
+        "anomaly_detected": true,
+        "telemetry_id": "acf58812-a46a-42f4-b024-3c5a346d2979",
+        "processing_time_ms": 2.9299259185791016,
+        "economic_risk_score": 0.3,
+        "completeness_score": 1.0
+      }
+    }
+  ]
+}

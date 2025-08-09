@@ -1,8 +1,0 @@
-{
-  "anomaly": "benign",
-  "function_profile_id": "func_A",
-  "execution_phase": "shutdown",
-  "concurrency_id": "YKO",
-  "force_starvation": false,
-  "invocation_timestamp": 1754355209.2076597
-}

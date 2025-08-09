@@ -1,8 +1,0 @@
-{
-  "anomaly": "cold_start",
-  "function_profile_id": "func_C",
-  "execution_phase": "init",
-  "concurrency_id": "XCT",
-  "force_starvation": true,
-  "invocation_timestamp": 1754355608.5124733
-}

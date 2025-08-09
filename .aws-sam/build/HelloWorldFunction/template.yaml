@@ -1,29 +1,46 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Basic SAM template with SQS DLQ for resilience
+Description: SCAFAD Layer 0 — Adaptive Telemetry Controller (HelloWorldFunction)
+
+Globals:
+  Function:
+    Runtime: python3.11
+    Handler: app.lambda_handler
+    Timeout: 60
+    MemorySize: 1024
+    Architectures:
+      - x86_64
+    Tracing: Active
+    Environment:
+      Variables:
+        SCAFAD_VERBOSITY: NORMAL
+        SCAFAD_ENABLE_GRAPH: 'true'
+        SCAFAD_ENABLE_ECONOMIC: 'true'
+        SCAFAD_ENABLE_PROVENANCE: 'true'
+        SCAFAD_TEMPORAL_WINDOW: '300'
+        SCAFAD_TIMEOUT_THRESHOLD: '0.6'
 
 Resources:
-  # --- SQS QUEUE RESOURCE ---
-  TelemetryDLQ:
-    Type: AWS::SQS::Queue
-
   HelloWorldFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: .               
-      Handler: app.lambda_handler
-      Runtime: python3.11
-      Events:
-        HelloWorld:
-          Type: Api
-          Properties:
-            Path: /hello
-            Method: get
-      
-      # --- PROPERTIES ---
-      DeadLetterQueue:
-        Type: SQS
-        TargetArn: !GetAtt TelemetryDLQ.Arn
+      # For local invoke, SAM uses the *logical id* (HelloWorldFunction). 
+      # FunctionName is optional for deploys; omit to let SAM manage it.
+      CodeUri: .
       Policies:
-        - SQSSendMessagePolicy:
-            QueueName: !GetAtt TelemetryDLQ.QueueName
+        # Minimal logs permissions for deploys; ignored for local invoke.
+        - AWSLambdaBasicExecutionRole
+    Metadata:
+      BuildMethod: python3.11
+      BuildProperties:
+        UseContainer: true     # builds C-extension deps (numpy) correctly
+        # If you want to slim the build, uncomment:
+        #  - Editable: false
+
+Outputs:
+  FunctionLogicalId:
+    Description: Logical ID used by `sam local invoke`
+    Value: HelloWorldFunction
+  DeployedFunctionName:
+    Description: Physical function name after deploy
+    Value: !Ref HelloWorldFunction

@@ -2123,13 +2123,21 @@ async def enhanced_lambda_handler(event: Dict, context: Any) -> Dict:
     """
     Enhanced Lambda handler with complete Layer 0 capabilities
     """
-    
+
     # Initialize Layer 0 controller
     controller = Layer0_AdaptiveTelemetryController()
-    
+
     # Process through Layer 0
     result = await controller.process_invocation(event, context)
-    
+
+    # Common metadata (echo useful context forward)
+    req_id = getattr(context, 'aws_request_id', 'unknown')
+    func_name = getattr(context, 'function_name', 'unknown')
+    phase = event.get('execution_phase', 'invoke')
+    anomaly = event.get('anomaly', 'benign')
+    payload_id = event.get('payload_id')
+    schema_version = LOG_VERSION['version']
+
     # Determine response based on processing result
     if result['status'] == 'success':
         response_body = {
@@ -2142,31 +2150,54 @@ async def enhanced_lambda_handler(event: Dict, context: Any) -> Dict:
             'processing_time_ms': result['processing_time_ms'],
             'emission_success': result['emission_channels'] > 0,
             'completeness_score': result['completeness_score'],
-            'performance_summary': controller.get_performance_summary()
+            'performance_summary': controller.get_performance_summary(),
+            # extra context for Layer 1 handoff
+            'request_id': req_id,
+            'function_name': func_name,
+            'execution_phase': phase,
+            'anomaly': anomaly,
+            'payload_id': payload_id,
+            'schema_version': schema_version
         }
-        
+
         status_code = 200
         if result['anomaly_detected']:
             status_code = 202  # Accepted with anomaly
-    
+
     else:
+        # Map fallback id to telemetry_id as well (validator requires it)
+        fallback_tid = result.get('fallback_telemetry_id', f'fallback_{int(time.time())}')
         response_body = {
             'message': 'SCAFAD Layer 0 - Fallback mode activated',
             'error': result['error'],
-            'fallback_telemetry_id': result.get('fallback_telemetry_id'),
-            'processing_time_ms': result['processing_time_ms']
+            'fallback_telemetry_id': fallback_tid,
+            'telemetry_id': fallback_tid,  # <-- critical for validators
+            'processing_time_ms': result['processing_time_ms'],
+            # keep parity with success-path context so Layer 1 logic is uniform
+            'anomaly_detected': False,
+            'request_id': req_id,
+            'function_name': func_name,
+            'execution_phase': phase,
+            'anomaly': 'execution_failure',
+            'payload_id': payload_id,
+            'schema_version': schema_version
         }
         status_code = 206  # Partial content (fallback)
-    
+
+    # Build headers (add telemetry echo for quick correlation)
+    headers = {
+        'Content-Type': 'application/json',
+        'X-SCAFAD-Version': LOG_VERSION['version'],
+        'X-SCAFAD-Layer': '0',
+        'X-Processing-Time': str(result.get('processing_time_ms', 0)),
+        # convenience header for downstream log correlation
+        'X-Telemetry-Id': response_body.get('telemetry_id', '')
+    }
+
     return {
         'statusCode': status_code,
         'body': json.dumps(response_body),
-        'headers': {
-            'Content-Type': 'application/json',
-            'X-SCAFAD-Version': LOG_VERSION['version'],
-            'X-SCAFAD-Layer': '0',
-            'X-Processing-Time': str(result.get('processing_time_ms', 0))
-        }
+        'headers': headers
     }
 
 

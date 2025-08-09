@@ -1,8 +1,0 @@
-{
-  "anomaly": "benign",
-  "function_profile_id": "func_A",
-  "execution_phase": "invoke",
-  "concurrency_id": "ZEU",
-  "force_starvation": true,
-  "invocation_timestamp": 1754355224.274547
-}

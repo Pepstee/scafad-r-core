@@ -1,2 +1,0 @@
-anomaly_type,concurrency_id,duration,event_id,execution_phase,fallback_mode,function_profile_id,log_version,memory_spike_kb,source,timestamp
-cold_start,AFQ,0.529,c0aead22-f65f-4f22-abbb-8b75152da764,shutdown,False,func_C,"{'version': 'v4.1', 'stage': 'dev', 'notes': 'Telemetry-unified fallback mode; enforced anomaly schema for Layer 0'}",20480,scafad-lambda,1754606673.2627378

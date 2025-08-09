@@ -1,8 +1,0 @@
-{
-  "anomaly": "cold_start",
-  "function_profile_id": "func_C",
-  "execution_phase": "shutdown",
-  "concurrency_id": "AFQ",
-  "force_starvation": false,
-  "invocation_timestamp": 1754568712.600905
-}

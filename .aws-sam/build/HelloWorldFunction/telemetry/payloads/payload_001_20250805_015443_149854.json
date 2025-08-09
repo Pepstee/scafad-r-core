@@ -1,8 +1,0 @@
-{
-  "anomaly": "cold_start",
-  "function_profile_id": "func_B",
-  "execution_phase": "invoke",
-  "concurrency_id": "ZOV",
-  "force_starvation": true,
-  "invocation_timestamp": 1754355283.1498547
-}

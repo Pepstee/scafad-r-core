@@ -1,0 +1,28 @@
+{
+  "invocation_index": 10,
+  "success": true,
+  "duration": 16.311954736709595,
+  "returncode": 0,
+  "stdout": "{\"statusCode\": 202, \"body\": \"{\\\"message\\\": \\\"SCAFAD Layer 0 - Enhanced telemetry processing complete\\\", \\\"telemetry_id\\\": \\\"14fe60b2-e1ba-4364-99fd-f24acb5a21b0\\\", \\\"node_id\\\": \\\"14fe60b2-e1ba-4364-99fd-f24acb5a21b0_1754699961485252655\\\", \\\"provenance_id\\\": \\\"47c649dc-c120-41a2-92df-344df34d2d08\\\", \\\"anomaly_detected\\\": true, \\\"economic_risk_score\\\": 0.3, \\\"processing_time_ms\\\": 3.8328170776367188, \\\"emission_success\\\": true, \\\"completeness_score\\\": 1.0, \\\"performance_summary\\\": {\\\"total_invocations\\\": 1, \\\"successful_emissions\\\": 1, \\\"fallback_activations\\\": 1, \\\"anomalies_detected\\\": 1, \\\"success_rate\\\": 1.0, \\\"fallback_rate\\\": 1.0, \\\"anomaly_rate\\\": 1.0, \\\"graph_metrics\\\": {\\\"node_count\\\": 1, \\\"edge_count\\\": 0, \\\"density\\\": 0, \\\"connected_components\\\": 1, \\\"average_clustering\\\": 0.0, \\\"temporal_span\\\": 0.0}}, \\\"request_id\\\": \\\"14fe60b2-e1ba-4364-99fd-f24acb5a21b0\\\", \\\"function_name\\\": \\\"HelloWorldFunction\\\", \\\"execution_phase\\\": \\\"invoke\\\", \\\"anomaly\\\": \\\"cpu_burst\\\", \\\"payload_id\\\": \\\"scafad_l0_0010\\\", \\\"schema_version\\\": \\\"v4.2\\\"}\", \"headers\": {\"Content-Type\": \"application/json\", \"X-SCAFAD-Version\": \"v4.2\", \"X-SCAFAD-Layer\": \"0\", \"X-Processing-Time\": \"3.8328170776367188\", \"X-Telemetry-Id\": \"14fe60b2-e1ba-4364-99fd-f24acb5a21b0\"}}",
+  "stderr": "Invoking app.lambda_handler (python3.11)\nLocal image is up-to-date\nUsing local image: public.ecr.aws/lambda/python:3.11-rapid-x86_64.\n\nMounting C:\\Users\\Gutua\\OneDrive\\Documents\\scafad-lambda\\.aws-sam\\build\\HelloWorldFunction as /var/task:ro,delegated, inside runtime container\nSTART RequestId: 7ceccdd5-83a9-4fbe-b23e-8966e740c0b2 Version: $LATEST\nâœ… SCAFAD Layer 0 vv4.2 loaded successfully\nðŸ“Š 17 components available for import\nðŸ”§ Configuration: NORMAL verbosity\nðŸš€ Ready for serverless anomaly detection\n[SCAFAD_TRACE] ts=1754699961.485 func=HelloWorldFunction phase=ExecutionPhase.INVOKE anomaly=AnomalyType.IO_INTENSIVE duration=0.200s memory=9011KB fallback=True\nEND RequestId: 14fe60b2-e1ba-4364-99fd-f24acb5a21b0\nREPORT RequestId: 14fe60b2-e1ba-4364-99fd-f24acb5a21b0\tInit Duration: 0.07 ms\tDuration: 5864.27 ms\tBilled Duration: 5865 ms\tMemory Size: 1024 MB\tMax Memory Used: 1024 MB\t\n\n",
+  "timestamp": "2025-08-09T01:39:23.194086",
+  "payload_id": "scafad_l0_0010",
+  "lambda_response": {
+    "statusCode": 202,
+    "body": "{\"message\": \"SCAFAD Layer 0 - Enhanced telemetry processing complete\", \"telemetry_id\": \"14fe60b2-e1ba-4364-99fd-f24acb5a21b0\", \"node_id\": \"14fe60b2-e1ba-4364-99fd-f24acb5a21b0_1754699961485252655\", \"provenance_id\": \"47c649dc-c120-41a2-92df-344df34d2d08\", \"anomaly_detected\": true, \"economic_risk_score\": 0.3, \"processing_time_ms\": 3.8328170776367188, \"emission_success\": true, \"completeness_score\": 1.0, \"performance_summary\": {\"total_invocations\": 1, \"successful_emissions\": 1, \"fallback_activations\": 1, \"anomalies_detected\": 1, \"success_rate\": 1.0, \"fallback_rate\": 1.0, \"anomaly_rate\": 1.0, \"graph_metrics\": {\"node_count\": 1, \"edge_count\": 0, \"density\": 0, \"connected_components\": 1, \"average_clustering\": 0.0, \"temporal_span\": 0.0}}, \"request_id\": \"14fe60b2-e1ba-4364-99fd-f24acb5a21b0\", \"function_name\": \"HelloWorldFunction\", \"execution_phase\": \"invoke\", \"anomaly\": \"cpu_burst\", \"payload_id\": \"scafad_l0_0010\", \"schema_version\": \"v4.2\"}",
+    "headers": {
+      "Content-Type": "application/json",
+      "X-SCAFAD-Version": "v4.2",
+      "X-SCAFAD-Layer": "0",
+      "X-Processing-Time": "3.8328170776367188",
+      "X-Telemetry-Id": "14fe60b2-e1ba-4364-99fd-f24acb5a21b0"
+    }
+  },
+  "scafad_metrics": {
+    "anomaly_detected": true,
+    "telemetry_id": "14fe60b2-e1ba-4364-99fd-f24acb5a21b0",
+    "processing_time_ms": 3.8328170776367188,
+    "economic_risk_score": 0.3,
+    "completeness_score": 1.0
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "timestamp": "2025-08-09T02:34:02.563840",
+  "tests": {
+    "basic_functionality": {
+      "success": true,
+      "duration": 1.8757412433624268,
+      "checks": {
+        "status_code_200": true,
+        "has_body": true,
+        "has_headers": true,
+        "response_time_reasonable": true,
+        "no_function_error": true
+      },
+      "response": {
+        "statusCode": 200,
+        "body": "{\"message\": \"SCAFAD Layer 0 - Enhanced telemetry processing complete\", \"telemetry_id\": \"bc79ba7a-b67b-450d-910c-227bba1eacbf\", \"node_id\": \"bc79ba7a-b67b-450d-910c-227bba1eacbf_1754703244664018559\", \"provenance_id\": \"6c016232-027c-49d6-bdd1-e769a0792d4e\", \"anomaly_detected\": false, \"economic_risk_score\": 0.3, \"processing_time_ms\": 9.272098541259766, \"emission_success\": true, \"completeness_score\": 1.0, \"performance_summary\": {\"total_invocations\": 1, \"successful_emissions\": 1, \"fallback_activations\": 1, \"anomalies_detected\": 0, \"success_rate\": 1.0, \"fallback_rate\": 1.0, \"anomaly_rate\": 0.0, \"graph_metrics\": {\"node_count\": 1, \"edge_count\": 0, \"density\": 0, \"connected_components\": 1, \"average_clustering\": 0.0, \"temporal_span\": 0.0}}, \"request_id\": \"bc79ba7a-b67b-450d-910c-227bba1eacbf\", \"function_name\": \"scafad-test-stack-HelloWorldFunction-k79tX3iBcK74\", \"execution_phase\": \"invoke\", \"anomaly\": \"benign\", \"payload_id\": null, \"schema_version\": \"v4.2\"}",
+        "headers": {
+          "Content-Type": "application/json",
+          "X-SCAFAD-Version": "v4.2",
+          "X-SCAFAD-Layer": "0",
+          "X-Processing-Time": "9.272098541259766",
+          "X-Telemetry-Id": "bc79ba7a-b67b-450d-910c-227bba1eacbf"
+        }
+      }
+    },
+    "anomaly_types": {
+      "success": false,
+      "success_rate": 14.285714285714285,
+      "individual_results": {
+        "benign": true,
+        "cold_start": false,
+        "cpu_burst": false,
+        "memory_spike": false,
+        "timeout_fallback": false,
+        "execution_failure": false,
+        "adversarial": false
+      }
+    },
+    "performance": {
+      "success": true,
+      "avg_duration": 0.04078454971313476,
+      "min_duration": 0.029434680938720703,
+      "max_duration": 0.06432986259460449,
+      "checks": {
+        "avg_under_5s": true,
+        "max_under_10s": true,
+        "consistent_performance": true
+      },
+      "raw_durations": [
+        0.031935930252075195,
+        0.06432986259460449,
+        0.029434680938720703,
+        0.04295992851257324,
+        0.035262346267700195
+      ]
+    },
+    "error_handling": {
+      "success": false,
+      "individual_results": {
+        "malformed_json": false,
+        "missing_fields": true,
+        "invalid_anomaly_type": true
+      }
+    },
+    "invoke_script": {
+      "success": false,
+      "return_code": 1,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"C:\\Users\\Gutua\\OneDrive\\Documents\\scafad-lambda\\invoke.py\", line 893, in <module>\n    main()\n  File \"C:\\Users\\Gutua\\OneDrive\\Documents\\scafad-lambda\\invoke.py\", line 812, in main\n    print(f\"\\U0001f680 SCAFAD Layer 0 Enhanced Invocation Script\")\n  File \"C:\\Users\\Gutua\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\encodings\\cp1252.py\", line 19, in encode\n    return codecs.charmap_encode(input,self.errors,encoding_table)[0]\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nUnicodeEncodeError: 'charmap' codec can't encode character '\\U0001f680' in position 0: character maps to <undefined>\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"C:\\Users\\Gutua\\OneDrive\\Documents\\scafad-lambda\\invoke.py\", line 898, in <module>\n    print(f\"\\n\\u274c SCAFAD invocation failed: {e}\")\n  File \"C:\\Users\\Gutua\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\encodings\\cp1252.py\", line 19, in encode\n    return codecs.charmap_encode(input,self.errors,encoding_table)[0]\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nUnicodeEncodeError: 'charmap' codec can't encode character '\\u274c' in position 2: character maps to <undefined>\n"
+    }
+  },
+  "summary": {
+    "passed_tests": 2,
+    "total_tests": 6,
+    "success_rate": 33.33333333333333,
+    "overall_success": false
+  }
+}

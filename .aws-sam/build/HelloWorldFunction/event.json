@@ -1,3 +1,14 @@
 {
-  "test": "ping"
+  "test_mode": true,
+  "anomaly": "benign",
+  "function_profile_id": "func_A",
+  "execution_phase": "invoke",
+  "concurrency_id": "TST",
+  "force_starvation": false,
+  "invocation_timestamp": 1705158400.0,
+  "enable_adversarial": false,
+  "attack_type": "adaptive",
+  "payload_id": "test_001",
+  "layer0_enabled": true,
+  "schema_version": "v4.2"
 }
