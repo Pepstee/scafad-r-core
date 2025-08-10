@@ -1,0 +1,162 @@
+# SCAFAD Reproducible Experiments - Docker Compose Configuration
+# ==============================================================
+# This docker-compose.yml provides multiple configurations for running
+# SCAFAD experiments in different scenarios and environments.
+
+version: '3.8'
+
+services:
+  # Main SCAFAD experiments container
+  scafad-experiments:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: scafad-experiments
+    environment:
+      - SCAFAD_ENVIRONMENT=DOCKER
+      - SCAFAD_REPRODUCIBLE=true
+      - SCAFAD_VERBOSITY=NORMAL
+      - PYTHONPATH=/scafad
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./experiments/results:/scafad/experiments/results
+      - ./experiments/datasets:/scafad/experiments/datasets
+      - ./experiments/logs:/scafad/experiments/logs
+    working_dir: /scafad
+    command: ["python", "experiments/run_reproducible_experiments.py", "--experiment-type", "all", "--seed", "42"]
+    networks:
+      - scafad-network
+    
+  # Quick validation container (for CI/CD)
+  scafad-validation:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: scafad-validation
+    environment:
+      - SCAFAD_ENVIRONMENT=DOCKER
+      - SCAFAD_REPRODUCIBLE=true
+      - SCAFAD_VERBOSITY=NORMAL
+    volumes:
+      - ./experiments/results:/scafad/experiments/results
+    working_dir: /scafad
+    command: ["python", "experiments/run_reproducible_experiments.py", "--experiment-type", "system_validation", "--quick-mode"]
+    networks:
+      - scafad-network
+
+  # i-GNN focused experiments
+  scafad-ignn:
+    build:
+      context: .
+      dockerfile: Dockerfile  
+    container_name: scafad-ignn
+    environment:
+      - SCAFAD_ENVIRONMENT=DOCKER
+      - SCAFAD_REPRODUCIBLE=true
+      - SCAFAD_VERBOSITY=VERBOSE
+    volumes:
+      - ./experiments/results:/scafad/experiments/results
+      - ./experiments/datasets:/scafad/experiments/datasets
+    working_dir: /scafad
+    command: ["python", "experiments/run_reproducible_experiments.py", "--experiment-type", "ignn_experiments", "--seed", "123"]
+    networks:
+      - scafad-network
+
+  # Baseline comparison experiments  
+  scafad-baselines:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: scafad-baselines
+    environment:
+      - SCAFAD_ENVIRONMENT=DOCKER
+      - SCAFAD_REPRODUCIBLE=true
+      - SCAFAD_VERBOSITY=NORMAL
+    volumes:
+      - ./experiments/results:/scafad/experiments/results
+      - ./experiments/datasets:/scafad/experiments/datasets
+    working_dir: /scafad
+    command: ["python", "experiments/run_reproducible_experiments.py", "--experiment-type", "baseline_experiments", "--seed", "456"]
+    networks:
+      - scafad-network
+
+  # Jupyter notebook for interactive analysis
+  scafad-jupyter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: scafad-jupyter
+    environment:
+      - SCAFAD_ENVIRONMENT=DOCKER
+      - JUPYTER_ENABLE_LAB=yes
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./:/scafad
+      - ./experiments/results:/scafad/experiments/results
+      - ./notebooks:/scafad/notebooks
+    working_dir: /scafad
+    command: ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root", "--NotebookApp.token=''"]
+    networks:
+      - scafad-network
+
+  # TensorBoard for experiment monitoring
+  scafad-tensorboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: scafad-tensorboard
+    environment:
+      - SCAFAD_ENVIRONMENT=DOCKER
+    ports:
+      - "6006:6006"
+    volumes:
+      - ./experiments/results:/scafad/experiments/results
+    working_dir: /scafad
+    command: ["tensorboard", "--logdir", "/scafad/experiments/results/logs", "--host", "0.0.0.0", "--port", "6006"]
+    networks:
+      - scafad-network
+    depends_on:
+      - scafad-experiments
+
+  # Database for experiment tracking (PostgreSQL)
+  scafad-db:
+    image: postgres:14-alpine
+    container_name: scafad-db
+    environment:
+      - POSTGRES_DB=scafad_experiments
+      - POSTGRES_USER=scafad
+      - POSTGRES_PASSWORD=scafad_password
+    volumes:
+      - scafad_db_data:/var/lib/postgresql/data
+      - ./docker/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - scafad-network
+
+  # Redis for caching and message queuing
+  scafad-redis:
+    image: redis:7-alpine
+    container_name: scafad-redis
+    volumes:
+      - scafad_redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - scafad-network
+
+# Named volumes for persistent data
+volumes:
+  scafad_db_data:
+    driver: local
+  scafad_redis_data:
+    driver: local
+
+# Network for service communication
+networks:
+  scafad-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

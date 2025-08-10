@@ -1,0 +1,33 @@
+# SCAFAD Core Requirements
+# ========================
+# Production dependencies for SCAFAD framework
+
+# Core scientific computing
+numpy>=1.21.0
+scipy>=1.7.0
+
+# Machine Learning and Deep Learning
+torch>=1.12.0
+scikit-learn>=1.1.0
+
+# Graph Analysis
+networkx>=2.8
+
+# Data handling
+pandas>=1.4.0
+
+# AWS Integration
+boto3>=1.24.0
+botocore>=1.27.0
+
+# Async processing
+aiofiles>=0.8.0
+
+# Configuration and logging
+pyyaml>=6.0
+
+# Testing (minimal for production)
+pytest>=7.0.0
+
+# Type hints (for development)
+typing-extensions>=4.0.0
