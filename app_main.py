@@ -56,6 +56,14 @@ from app_formal import FormalVerificationEngine
 from app_schema import SchemaEvolutionManager
 from app_config import Layer0Config, validate_environment
 
+# Import Layer 0 core components
+from layer0_signal_negotiation import SignalNegotiator
+from layer0_redundancy_manager import RedundancyManager
+from layer0_sampler import Sampler
+from layer0_fallback_orchestrator import FallbackOrchestrator
+from layer0_runtime_control import RuntimeControlLoop
+from layer0_core import AnomalyDetectionEngine
+
 
 class Layer0_AdaptiveTelemetryController:
     """
@@ -68,6 +76,19 @@ class Layer0_AdaptiveTelemetryController:
     def __init__(self, config: Layer0Config = None):
         self.config = config or Layer0Config()
         
+        # Initialize Layer 0 core components
+        self.signal_negotiator = SignalNegotiator(self.config)
+        self.redundancy_manager = RedundancyManager(self.config)
+        self.sampler = Sampler(self.config)
+        self.fallback_orchestrator = FallbackOrchestrator(
+            self.config,
+            self.signal_negotiator,
+            self.redundancy_manager,
+            self.sampler
+        )
+        self.anomaly_detection_engine = AnomalyDetectionEngine(self.config)
+        self.runtime_control = RuntimeControlLoop(self.config)
+        
         # Initialize all specialized components
         self.telemetry_manager = MultiChannelTelemetry(self.config)
         self.graph_builder = AdvancedInvocationGraphBuilder(self.config)
@@ -77,6 +98,18 @@ class Layer0_AdaptiveTelemetryController:
         self.silent_failure_analyzer = SilentFailureAnalyzer(self.config)
         self.formal_verifier = FormalVerificationEngine(self.config)
         self.schema_manager = SchemaEvolutionManager(self.config)
+        
+        # Initialize runtime control loop with all components
+        self.runtime_control.initialize_components(
+            self.signal_negotiator,
+            self.redundancy_manager,
+            self.sampler,
+            self.fallback_orchestrator,
+            self.anomaly_detection_engine
+        )
+        
+        # Start runtime control loop
+        self.runtime_control.start_control_loop()
         
         # Performance tracking
         self.performance_metrics = {
@@ -144,12 +177,13 @@ class Layer0_AdaptiveTelemetryController:
         return await self.schema_manager.validate_and_sanitize_input(event, context)
     
     async def _generate_telemetry(self, event: Dict, context: Any) -> TelemetryRecord:
-        """Generate base telemetry record"""
-        # Check for adversarial injection
-        if self.config.adversarial_mode != 'DISABLED' and event.get('enable_adversarial'):
-            return await self.adversarial_engine.inject_adversarial_anomaly(event, context)
-        else:
-            return await self.telemetry_manager.create_normal_telemetry(event, context)
+        """Generate telemetry record for the invocation"""
+        telemetry = await self.telemetry_manager.create_normal_telemetry(event, context)
+        
+        # Update fallback orchestrator telemetry tracking
+        self.fallback_orchestrator.update_telemetry_tracking("telemetry")
+        
+        return telemetry
     
     async def _process_through_components(self, telemetry: TelemetryRecord, 
                                         event: Dict, context: Any) -> TelemetryRecord:
@@ -167,6 +201,9 @@ class Layer0_AdaptiveTelemetryController:
                 event, context, telemetry
             )
             telemetry.graph_node_id = node_id
+            
+            # Update fallback orchestrator with invocation trace data
+            self.fallback_orchestrator.update_telemetry_tracking("invocation_trace")
         
         # Economic abuse detection
         if self.config.enable_economic_monitoring:
