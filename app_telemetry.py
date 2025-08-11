@@ -402,6 +402,11 @@ class TelemetryRecord:
         
         self.tags[key] = value
     
+    @property
+    def telemetry_id(self) -> str:
+        """Alias for event_id for backward compatibility"""
+        return self.event_id
+    
     def mark_emission_attempt(self, channel: str, success: bool = True) -> None:
         """Mark emission attempt to a channel"""
         self.emission_attempts += 1
@@ -1888,3 +1893,97 @@ class TelemetryValidator:
                 if value is None or (isinstance(value, str) and not value.strip()):
                     result['errors'].append(f"Empty required field: {field_name}")
                     result['valid'] = False
+    
+    def _validate_numeric_ranges(self, telemetry: TelemetryRecord, result: Dict):
+        """Validate numeric fields are within expected ranges"""
+        
+        for field_name, (min_val, max_val) in self.validation_rules['numeric_ranges'].items():
+            if hasattr(telemetry, field_name):
+                value = getattr(telemetry, field_name)
+                if value is not None and (value < min_val or value > max_val):
+                    result['warnings'].append(f"{field_name} value {value} outside expected range [{min_val}, {max_val}]")
+    
+    def _validate_string_patterns(self, telemetry: TelemetryRecord, result: Dict):
+        """Validate string fields match expected patterns"""
+        
+        import re
+        for field_name, pattern in self.validation_rules['string_patterns'].items():
+            if hasattr(telemetry, field_name):
+                value = getattr(telemetry, field_name)
+                if value and not re.match(pattern, str(value)):
+                    result['warnings'].append(f"{field_name} value '{value}' doesn't match expected pattern")
+    
+    def _validate_logical_consistency(self, telemetry: TelemetryRecord, result: Dict):
+        """Validate logical consistency between fields"""
+        
+        # Check that duration is reasonable for execution phase
+        if telemetry.execution_phase == ExecutionPhase.INIT and telemetry.duration > 60.0:
+            result['warnings'].append("Init phase duration seems unusually long")
+        
+        # Check that memory usage is reasonable
+        if telemetry.memory_spike_kb > 1024 * 1024:  # > 1GB
+            result['warnings'].append("Memory usage seems unusually high")
+    
+    def _validate_temporal_consistency(self, telemetry: TelemetryRecord, result: Dict):
+        """Validate temporal consistency of timestamps"""
+        
+        current_time = time.time()
+        if telemetry.timestamp > current_time:
+            result['warnings'].append("Timestamp is in the future")
+        elif current_time - telemetry.timestamp > 86400:  # > 24 hours
+            result['warnings'].append("Timestamp is unusually old")
+    
+    def _calculate_quality_score(self, validation_result: Dict) -> float:
+        """Calculate overall quality score based on validation results"""
+        
+        base_score = 1.0
+        
+        # Penalize errors heavily
+        error_penalty = len(validation_result['errors']) * 0.3
+        base_score -= error_penalty
+        
+        # Penalize warnings lightly
+        warning_penalty = len(validation_result['warnings']) * 0.05
+        base_score -= warning_penalty
+        
+        return max(0.0, base_score)
+
+
+# =============================================================================
+# Factory Functions for Backward Compatibility
+# =============================================================================
+
+def create_telemetry_record_with_telemetry_id(**kwargs) -> TelemetryRecord:
+    """
+    Factory function to create TelemetryRecord with telemetry_id parameter
+    for backward compatibility with existing code.
+    
+    This function maps telemetry_id to event_id internally.
+    """
+    # Handle telemetry_id -> event_id mapping
+    if 'telemetry_id' in kwargs and 'event_id' not in kwargs:
+        kwargs['event_id'] = kwargs.pop('telemetry_id')
+    
+    # Ensure required fields have defaults if not provided
+    if 'timestamp' not in kwargs:
+        kwargs['timestamp'] = time.time()
+    
+    if 'concurrency_id' not in kwargs:
+        kwargs['concurrency_id'] = str(uuid.uuid4())
+    
+    # Add missing required fields with sensible defaults
+    if 'network_io_bytes' not in kwargs:
+        kwargs['network_io_bytes'] = 0
+    
+    if 'fallback_mode' not in kwargs:
+        kwargs['fallback_mode'] = False
+    
+    if 'source' not in kwargs:
+        kwargs['source'] = TelemetrySource.PRIMARY
+    
+    # Create the record
+    return TelemetryRecord(**kwargs)
+
+
+# Alias for backward compatibility
+create_telemetry_record = create_telemetry_record_with_telemetry_id

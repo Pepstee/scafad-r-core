@@ -775,6 +775,78 @@ class Sampler:
         
         logger.info(f"Base sample rate changed from {old_rate:.3f} to {rate:.3f}")
     
+    def get_sampling_rate(self, function_id: str = None, execution_state: str = None) -> float:
+        """Get the current sampling rate for a function"""
+        if function_id and function_id in self.execution_profiles:
+            profile = self.execution_profiles[function_id]
+            # Return effective sample rate from profile
+            return profile.effective_sample_rate
+        
+        # Return base sample rate if no function-specific profile
+        return self.base_sample_rate
+    
+    def update_latency_metrics(self, function_id: str, latency_ms: float):
+        """Update latency metrics for a function"""
+        if function_id not in self.execution_profiles:
+            self.execution_profiles[function_id] = ExecutionProfile(function_id=function_id)
+        
+        profile = self.execution_profiles[function_id]
+        profile.latency_samples.append(latency_ms)
+        
+        # Keep only last 100 samples
+        if len(profile.latency_samples) > 100:
+            profile.latency_samples = profile.latency_samples[-100:]
+        
+        # Update statistics
+        if profile.latency_samples:
+            profile.avg_latency_ms = statistics.mean(profile.latency_samples)
+            profile.p50_latency_ms = statistics.median(profile.latency_samples)
+            if len(profile.latency_samples) >= 5:
+                profile.p95_latency_ms = sorted(profile.latency_samples)[int(len(profile.latency_samples) * 0.95)]
+                profile.p99_latency_ms = sorted(profile.latency_samples)[int(len(profile.latency_samples) * 0.99)]
+    
+    def update_error_metrics(self, function_id: str, error_count: int, total_executions: int):
+        """Update error metrics for a function"""
+        if function_id not in self.execution_profiles:
+            self.execution_profiles[function_id] = ExecutionProfile(function_id=function_id)
+        
+        profile = self.execution_profiles[function_id]
+        
+        # Calculate error rate
+        error_rate = error_count / total_executions if total_executions > 0 else 0.0
+        
+        # Update anomaly detection
+        if error_rate > 0.1:  # 10% error rate threshold
+            profile.anomaly_count += 1
+            profile.anomaly_types.add(AnomalyType.ERROR_RATE_INCREASE)
+            profile.last_anomaly_time = time.time()
+        
+        # Adjust sampling rate based on error rate
+        if error_rate > 0.2:  # High error rate - sample more
+            profile.effective_sample_rate = min(1.0, profile.effective_sample_rate * 1.5)
+        elif error_rate < 0.05:  # Low error rate - sample less
+            profile.effective_sample_rate = max(0.1, profile.effective_sample_rate * 0.8)
+    
+    def determine_sampling_strategy(self, requests_per_second: float) -> str:
+        """Determine sampling strategy based on load"""
+        if requests_per_second > 1000:
+            return "aggressive"  # High load - sample more aggressively
+        elif requests_per_second > 100:
+            return "adaptive"    # Medium load - adaptive sampling
+        else:
+            return "conservative"  # Low load - conservative sampling
+    
+    def set_sampling_policy(self, policy: str):
+        """Set sampling policy"""
+        if policy == "aggressive":
+            self.base_sample_rate = 0.8
+        elif policy == "conservative":
+            self.base_sample_rate = 0.2
+        elif policy == "adaptive":
+            self.base_sample_rate = 0.5
+        else:
+            logger.warning(f"Unknown sampling policy: {policy}")
+    
     def _profile_cleanup_worker(self):
         """Background worker for cleaning up old profiles"""
         while self.running:
@@ -885,6 +957,9 @@ def test_sampler():
     
     # Shutdown
     sampler.shutdown()
+
+# Alias for compatibility with tests
+ExecutionAwareSampler = Sampler
 
 if __name__ == "__main__":
     # Run test if executed directly

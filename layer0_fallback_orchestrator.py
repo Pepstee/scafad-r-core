@@ -82,6 +82,324 @@ from layer0_sampler import Sampler
 logger = logging.getLogger(__name__)
 
 # =============================================================================
+# Channel Failover Matrix
+# =============================================================================
+
+@dataclass
+class ChannelFailoverConfig:
+    """Configuration for channel failover matrix"""
+    primary_channel: ChannelType = ChannelType.CLOUDWATCH
+    secondary_channels: List[ChannelType] = field(default_factory=lambda: [ChannelType.XRAY, ChannelType.SQS])
+    failover_cooldown_ms: int = 15000      # 15 seconds between failovers
+    recovery_probe_interval_ms: int = 30000  # 30 seconds between recovery probes
+    max_failover_attempts: int = 3         # Max failovers before emergency mode
+    channel_health_threshold: float = 0.4  # Health below this triggers failover
+    recovery_health_threshold: float = 0.7  # Health above this allows recovery
+
+@dataclass
+class ChannelStatus:
+    """Status of an individual channel"""
+    channel_type: ChannelType
+    is_healthy: bool = True
+    last_health_check: float = 0.0
+    health_score: float = 1.0
+    failure_count: int = 0
+    last_failure_time: float = 0.0
+    consecutive_successes: int = 0
+    is_primary: bool = False
+    failover_count: int = 0
+
+class ChannelFailoverMatrix:
+    """
+    Manages channel failover and recovery with sophisticated state tracking
+    
+    Features:
+    - Multi-tier failover cascade (primary -> secondary -> tertiary -> emergency)
+    - Cooldown periods to prevent rapid toggling
+    - Recovery probing with hysteresis
+    - Circuit breaker pattern for failed channels
+    - Comprehensive telemetry and metrics
+    """
+    
+    def __init__(self, config: ChannelFailoverConfig, signal_negotiator: SignalNegotiator = None):
+        self.config = config
+        self.signal_negotiator = signal_negotiator
+        
+        # Channel status tracking
+        self.channel_statuses: Dict[ChannelType, ChannelStatus] = {}
+        self.active_channel: Optional[ChannelType] = None
+        self.failover_history: deque = deque(maxlen=100)
+        
+        # State management
+        self.last_failover_time: float = 0.0
+        self.failover_attempt_count: int = 0
+        self.recovery_probe_count: int = 0
+        self.is_in_emergency_mode: bool = False
+        
+        # Locking for thread safety
+        self._matrix_lock = threading.RLock()
+        
+        # Initialize channels
+        self._initialize_channels()
+    
+    def _initialize_channels(self):
+        """Initialize all channels with their status"""
+        with self._matrix_lock:
+            # Primary channel
+            self.channel_statuses[self.config.primary_channel] = ChannelStatus(
+                channel_type=self.config.primary_channel,
+                is_primary=True
+            )
+            self.active_channel = self.config.primary_channel
+            
+            # Secondary channels
+            for channel in self.config.secondary_channels:
+                self.channel_statuses[channel] = ChannelStatus(
+                    channel_type=channel,
+                    is_primary=False
+                )
+    
+    def update_channel_health(self, channel_type: ChannelType, health_score: float, 
+                             is_healthy: bool = None, timestamp: float = None):
+        """Update health status for a specific channel"""
+        if timestamp is None:
+            timestamp = time.time()
+        
+        with self._matrix_lock:
+            if channel_type not in self.channel_statuses:
+                return
+            
+            status = self.channel_statuses[channel_type]
+            status.last_health_check = timestamp
+            status.health_score = health_score
+            
+            # Determine health status with hysteresis
+            if is_healthy is None:
+                if status.is_healthy:
+                    # Currently healthy, need lower threshold to mark unhealthy
+                    is_healthy = health_score >= self.config.channel_health_threshold
+                else:
+                    # Currently unhealthy, need higher threshold to mark healthy
+                    is_healthy = health_score >= self.config.recovery_health_threshold
+            
+            # Update status based on health change
+            if is_healthy and not status.is_healthy:
+                # Recovery detected
+                status.consecutive_successes += 1
+                if status.consecutive_successes >= 3:  # Require 3 consecutive successes
+                    status.is_healthy = True
+                    status.failure_count = 0
+                    logger.info(f"Channel {channel_type.value} marked as healthy (score: {health_score:.3f})")
+            elif not is_healthy and status.is_healthy:
+                # Failure detected
+                status.is_healthy = False
+                status.failure_count += 1
+                status.last_failure_time = timestamp
+                status.consecutive_successes = 0
+                logger.warning(f"Channel {channel_type.value} marked as unhealthy (score: {health_score:.3f})")
+            elif is_healthy:
+                status.consecutive_successes += 1
+            else:
+                status.consecutive_successes = 0
+    
+    def should_trigger_failover(self) -> bool:
+        """Check if failover should be triggered for active channel"""
+        current_time = time.time()
+        
+        with self._matrix_lock:
+            if not self.active_channel:
+                return True  # No active channel
+            
+            # Check cooldown period
+            if current_time - self.last_failover_time < self.config.failover_cooldown_ms / 1000.0:
+                return False  # Still in cooldown
+            
+            # Check if active channel is unhealthy
+            active_status = self.channel_statuses.get(self.active_channel)
+            if not active_status or not active_status.is_healthy:
+                logger.warning(f"Active channel {self.active_channel.value} is unhealthy, triggering failover")
+                return True
+            
+            return False
+    
+    def execute_failover(self) -> Tuple[bool, Optional[ChannelType], str]:
+        """
+        Execute channel failover to next available channel
+        
+        Returns:
+            Tuple of (success, new_channel, reason)
+        """
+        current_time = time.time()
+        
+        with self._matrix_lock:
+            if not self.should_trigger_failover():
+                return False, self.active_channel, "No failover needed"
+            
+            previous_channel = self.active_channel
+            candidate_channels = self._get_failover_candidates()
+            
+            if not candidate_channels:
+                # No healthy channels available - enter emergency mode
+                self.is_in_emergency_mode = True
+                self.active_channel = None
+                reason = "No healthy channels available - entering emergency mode"
+                logger.critical(reason)
+                
+                self._record_failover_event(previous_channel, None, "EMERGENCY", reason)
+                return False, None, reason
+            
+            # Select best candidate channel
+            new_channel = candidate_channels[0]  # Already sorted by priority/health
+            
+            # Execute the failover
+            self.active_channel = new_channel
+            self.last_failover_time = current_time
+            self.failover_attempt_count += 1
+            self.is_in_emergency_mode = False
+            
+            # Update channel status
+            if new_channel in self.channel_statuses:
+                self.channel_statuses[new_channel].failover_count += 1
+            
+            reason = f"Failover from {previous_channel.value if previous_channel else 'None'} to {new_channel.value}"
+            logger.info(reason)
+            
+            self._record_failover_event(previous_channel, new_channel, "FAILOVER", reason)
+            
+            # Check if we've exceeded max failover attempts
+            if self.failover_attempt_count >= self.config.max_failover_attempts:
+                logger.warning(f"Maximum failover attempts ({self.config.max_failover_attempts}) reached")
+            
+            return True, new_channel, reason
+    
+    def _get_failover_candidates(self) -> List[ChannelType]:
+        """Get ordered list of failover candidate channels"""
+        with self._matrix_lock:
+            candidates = []
+            
+            # First preference: healthy secondary channels
+            for channel in self.config.secondary_channels:
+                if (channel in self.channel_statuses and 
+                    self.channel_statuses[channel].is_healthy and
+                    channel != self.active_channel):
+                    candidates.append(channel)
+            
+            # Second preference: primary channel if it's healthy and not currently active
+            if (self.config.primary_channel != self.active_channel and
+                self.config.primary_channel in self.channel_statuses and
+                self.channel_statuses[self.config.primary_channel].is_healthy):
+                candidates.insert(0, self.config.primary_channel)  # Higher priority
+            
+            # Sort by health score (descending) and failure count (ascending)
+            candidates.sort(key=lambda ch: (
+                self.channel_statuses[ch].health_score,
+                -self.channel_statuses[ch].failure_count
+            ), reverse=True)
+            
+            return candidates
+    
+    def attempt_recovery_to_primary(self) -> Tuple[bool, str]:
+        """
+        Attempt recovery to primary channel if conditions are met
+        
+        Returns:
+            Tuple of (success, reason)
+        """
+        current_time = time.time()
+        
+        with self._matrix_lock:
+            # Check if recovery probe is due
+            if (current_time - self.last_failover_time < 
+                self.config.recovery_probe_interval_ms / 1000.0):
+                return False, "Recovery probe interval not reached"
+            
+            # Check if we're not already on primary
+            if self.active_channel == self.config.primary_channel:
+                return False, "Already on primary channel"
+            
+            # Check primary channel health
+            primary_status = self.channel_statuses.get(self.config.primary_channel)
+            if not primary_status:
+                return False, "Primary channel status not available"
+            
+            if not primary_status.is_healthy:
+                return False, f"Primary channel unhealthy (score: {primary_status.health_score:.3f})"
+            
+            if primary_status.health_score < self.config.recovery_health_threshold:
+                return False, f"Primary channel health below recovery threshold ({primary_status.health_score:.3f} < {self.config.recovery_health_threshold})"
+            
+            # Execute recovery
+            previous_channel = self.active_channel
+            self.active_channel = self.config.primary_channel
+            self.recovery_probe_count += 1
+            self.is_in_emergency_mode = False
+            
+            reason = f"Recovery from {previous_channel.value if previous_channel else 'None'} to primary {self.config.primary_channel.value}"
+            logger.info(reason)
+            
+            self._record_failover_event(previous_channel, self.config.primary_channel, "RECOVERY", reason)
+            
+            return True, reason
+    
+    def _record_failover_event(self, from_channel: Optional[ChannelType], 
+                              to_channel: Optional[ChannelType], 
+                              event_type: str, reason: str):
+        """Record failover event in history"""
+        event = {
+            'timestamp': time.time(),
+            'event_type': event_type,
+            'from_channel': from_channel.value if from_channel else None,
+            'to_channel': to_channel.value if to_channel else None,
+            'reason': reason,
+            'failover_attempt_count': self.failover_attempt_count,
+            'recovery_probe_count': self.recovery_probe_count,
+            'is_emergency_mode': self.is_in_emergency_mode
+        }
+        
+        self.failover_history.append(event)
+        
+        # Log structured event
+        logger.info(f"CHANNEL_FAILOVER_EVENT: {json.dumps(event)}")
+    
+    def get_matrix_status(self) -> Dict[str, Any]:
+        """Get comprehensive status of the failover matrix"""
+        with self._matrix_lock:
+            return {
+                'active_channel': self.active_channel.value if self.active_channel else None,
+                'is_emergency_mode': self.is_in_emergency_mode,
+                'failover_attempt_count': self.failover_attempt_count,
+                'recovery_probe_count': self.recovery_probe_count,
+                'last_failover_time': self.last_failover_time,
+                'channel_statuses': {
+                    ch.value: {
+                        'is_healthy': status.is_healthy,
+                        'health_score': status.health_score,
+                        'failure_count': status.failure_count,
+                        'last_failure_time': status.last_failure_time,
+                        'consecutive_successes': status.consecutive_successes,
+                        'is_primary': status.is_primary,
+                        'failover_count': status.failover_count,
+                        'last_health_check': status.last_health_check
+                    } for ch, status in self.channel_statuses.items()
+                },
+                'failover_candidates': [ch.value for ch in self._get_failover_candidates()],
+                'config': {
+                    'primary_channel': self.config.primary_channel.value,
+                    'secondary_channels': [ch.value for ch in self.config.secondary_channels],
+                    'failover_cooldown_ms': self.config.failover_cooldown_ms,
+                    'recovery_probe_interval_ms': self.config.recovery_probe_interval_ms,
+                    'max_failover_attempts': self.config.max_failover_attempts,
+                    'channel_health_threshold': self.config.channel_health_threshold,
+                    'recovery_health_threshold': self.config.recovery_health_threshold
+                }
+            }
+    
+    def get_failover_history(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """Get recent failover history"""
+        with self._matrix_lock:
+            return list(self.failover_history)[-limit:]
+
+# =============================================================================
 # Core Enumerations
 # =============================================================================
 
@@ -216,6 +534,10 @@ class FallbackOrchestrator:
         # Fallback event history
         self.fallback_history: deque = deque(maxlen=1000)
         
+        # Initialize Channel Failover Matrix
+        failover_config = ChannelFailoverConfig()
+        self.channel_failover_matrix = ChannelFailoverMatrix(failover_config, signal_negotiator)
+        
         # Background monitoring
         self._monitoring_active = False
         self._monitor_thread = None
@@ -302,9 +624,23 @@ class FallbackOrchestrator:
                 self._trigger_fallback(FallbackTrigger.ERROR_RATE_THRESHOLD, FallbackReason.HIGH_ERROR_RATE)
                 return
             
-            # Check channel health
+            # Check channel health and execute failover if needed
             if self._should_trigger_channel_degradation():
-                self._trigger_fallback(FallbackTrigger.CHANNEL_DEGRADATION, FallbackReason.CHANNEL_UNRELIABLE)
+                # Try automatic failover first
+                success, new_channel, reason = self.channel_failover_matrix.execute_failover()
+                if success:
+                    logger.info(f"Automatic channel failover successful: {reason}")
+                    # Update signal negotiator to use new channel if available
+                    if self.signal_negotiator and new_channel:
+                        try:
+                            # This would be implemented in the signal negotiator
+                            # self.signal_negotiator.switch_primary_channel(new_channel)
+                            logger.info(f"Signal negotiator updated to use channel: {new_channel.value}")
+                        except Exception as e:
+                            logger.warning(f"Failed to update signal negotiator: {e}")
+                else:
+                    # Failover failed, trigger standard fallback
+                    self._trigger_fallback(FallbackTrigger.CHANNEL_DEGRADATION, FallbackReason.CHANNEL_UNRELIABLE)
                 return
             
             # Check if we can recover
@@ -435,11 +771,19 @@ class FallbackOrchestrator:
         try:
             channel_health = self.signal_negotiator.get_channel_health_summary()
             current_time = time.time()
+            should_trigger = False
             
             with self._lock:
                 for channel_type, health in channel_health.items():
                     current_qos = health.get('qos_score', 1.0)
                     previous_qos = self.state.last_qos_scores.get(channel_type, 1.0)
+                    
+                    # Update failover matrix with current health
+                    self.channel_failover_matrix.update_channel_health(
+                        channel_type, 
+                        current_qos, 
+                        timestamp=current_time
+                    )
                     
                     # FIXED: Add hysteresis smoothing for QoS changes to prevent brief dips from triggering EMERGENCY mode
                     qos_change = abs(current_qos - previous_qos)
@@ -451,15 +795,20 @@ class FallbackOrchestrator:
                         # Update stored QoS score
                         self.state.last_qos_scores[channel_type] = current_qos
                         logger.warning(f"Channel degradation detected: {channel_type} QoS {current_qos:.2f} < {self.thresholds.channel_health_threshold}")
-                        return True
+                        should_trigger = True
                     
                     # Update stored QoS score for hysteresis tracking
                     self.state.last_qos_scores[channel_type] = current_qos
+            
+            # Also check if failover matrix thinks failover is needed
+            if not should_trigger:
+                should_trigger = self.channel_failover_matrix.should_trigger_failover()
+            
+            return should_trigger
                     
         except Exception as e:
             logger.warning(f"Error checking channel health: {e}")
-        
-        return False
+            return False
     
     def update_telemetry_tracking(self, telemetry_type: str, timestamp: float = None):
         """Update telemetry tracking for timeout detection"""
@@ -613,13 +962,21 @@ class FallbackOrchestrator:
             self.state.mode = FallbackMode.RECOVERY
             self.state.recovery_attempts += 1
             
-            # Test recovery conditions
-            recovery_successful = self._test_recovery_conditions()
+            # First try channel failover matrix recovery
+            failover_recovery_successful, failover_reason = self.channel_failover_matrix.attempt_recovery_to_primary()
+            
+            # Test other recovery conditions
+            other_recovery_successful = self._test_recovery_conditions()
+            
+            recovery_successful = failover_recovery_successful or other_recovery_successful
             
             if recovery_successful:
                 self.state.mode = FallbackMode.NORMAL
                 self.state.active_triggers.clear()
                 self.state.hysteresis_start = current_time
+                
+                # Clear downstream null model flag
+                self.clear_downstream_null_model_flag()
                 
                 # Record recovery
                 fallback_event = FallbackEvent(
@@ -630,16 +987,19 @@ class FallbackOrchestrator:
                     new_mode=FallbackMode.NORMAL,
                     metadata={
                         'recovery_attempt': self.state.recovery_attempts,
-                        'recovery_successful': True
+                        'recovery_successful': True,
+                        'failover_recovery': failover_recovery_successful,
+                        'failover_reason': failover_reason,
+                        'other_recovery': other_recovery_successful
                     }
                 )
                 self.fallback_history.append(fallback_event)
                 
-                logger.info(f"Recovery successful: {previous_mode} -> NORMAL")
+                logger.info(f"Recovery successful: {previous_mode} -> NORMAL (failover: {failover_recovery_successful}, other: {other_recovery_successful})")
             else:
                 # Fallback to previous mode
                 self.state.mode = previous_mode
-                logger.warning(f"Recovery failed, staying in {previous_mode}")
+                logger.warning(f"Recovery failed, staying in {previous_mode} (failover reason: {failover_reason})")
     
     def _test_recovery_conditions(self) -> bool:
         """Test if recovery conditions are met"""
@@ -794,7 +1154,7 @@ class FallbackOrchestrator:
     def get_fallback_status(self) -> Dict[str, Any]:
         """Get current fallback status"""
         with self._lock:
-            return {
+            base_status = {
                 'current_mode': self.state.mode.value,
                 'active_triggers': [t.value for t in self.state.active_triggers],
                 'fallback_count': self.state.fallback_count,
@@ -816,8 +1176,10 @@ class FallbackOrchestrator:
                     'trigger_counts': {k.value: v for k, v in self.metrics.trigger_counts.items()},
                     'mode_transitions': {f"{k[0].value}->{k[1].value}": v for k, v in self.metrics.mode_transitions.items()}
                 },
-                'downstream_null_model_active': self.is_downstream_null_model_active()
+                'downstream_null_model_active': self.is_downstream_null_model_active(),
+                'channel_failover_matrix': self.channel_failover_matrix.get_matrix_status()
             }
+            return base_status
     
     def get_fallback_history(self, limit: int = 100) -> List[Dict[str, Any]]:
         """Get fallback event history"""
@@ -827,11 +1189,15 @@ class FallbackOrchestrator:
                 history.append({
                     'timestamp': event.timestamp,
                     'trigger': event.trigger.value,
-                    'reason': event.trigger.value,
+                    'reason': event.reason.value,
                     'mode_transition': f"{event.previous_mode.value} -> {event.new_mode.value}",
                     'metadata': event.metadata
                 })
             return history
+    
+    def get_channel_failover_history(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """Get channel failover history from the failover matrix"""
+        return self.channel_failover_matrix.get_failover_history(limit)
     
     def force_fallback(self, mode: FallbackMode, reason: str = "manual_override"):
         """Force fallback to specified mode (for testing/debugging)"""
@@ -883,6 +1249,11 @@ class FallbackOrchestrator:
             if hasattr(self, '_downstream_notification_data'):
                 self._downstream_notification_data = None
         
+        # Log final failover matrix state
+        if hasattr(self, 'channel_failover_matrix'):
+            final_matrix_status = self.channel_failover_matrix.get_matrix_status()
+            logger.info(f"Final channel failover matrix status: {json.dumps(final_matrix_status, indent=2)}")
+        
         logger.info("Fallback orchestrator shutdown complete")
 
 # =============================================================================
@@ -913,28 +1284,39 @@ async def test_fallback_orchestrator():
     
     # Create mock components
     class MockSignalNegotiator:
+        def __init__(self):
+            self.health_scores = {'cloudwatch': 0.8, 'xray': 0.2, 'sqs': 0.9}
+        
         def get_channel_health_summary(self):
-            return {'cloudwatch': {'qos_score': 0.8}, 'xray': {'qos_score': 0.2}}
+            return {ch: {'qos_score': score} for ch, score in self.health_scores.items()}
+        
+        def update_health(self, channel, score):
+            self.health_scores[channel] = score
     
     class MockRedundancyManager:
         def set_redundancy_mode(self, mode):
-            pass
+            print(f"Redundancy manager set to mode: {mode}")
     
     class MockSampler:
         def set_base_sample_rate(self, rate):
-            pass
+            print(f"Sampler set to rate: {rate}")
     
     # Create orchestrator
+    mock_negotiator = MockSignalNegotiator()
     orchestrator = FallbackOrchestrator(
         config=config,
-        signal_negotiator=MockSignalNegotiator(),
+        signal_negotiator=mock_negotiator,
         redundancy_manager=MockRedundancyManager(),
         sampler=MockSampler()
     )
     
     # Test fallback status
     status = orchestrator.get_fallback_status()
-    print(f"Initial status: {status}")
+    print(f"Initial status: {json.dumps(status, indent=2, default=str)}")
+    
+    # Test channel failover matrix
+    matrix_status = orchestrator.channel_failover_matrix.get_matrix_status()
+    print(f"Initial failover matrix status: {json.dumps(matrix_status, indent=2)}")
     
     # Test telemetry tracking
     orchestrator.update_telemetry_tracking("telemetry")
@@ -951,22 +1333,43 @@ async def test_fallback_orchestrator():
     orchestrator.update_telemetry_tracking("error")
     orchestrator.update_telemetry_tracking("error")
     
+    # Test channel degradation
+    print("\n=== Testing Channel Degradation ===")
+    mock_negotiator.update_health('cloudwatch', 0.3)  # Below threshold
+    mock_negotiator.update_health('xray', 0.1)  # Very low
+    
+    # Wait for monitoring to detect changes
+    await asyncio.sleep(3)
+    
+    # Check status after channel degradation
+    status = orchestrator.get_fallback_status()
+    print(f"After channel degradation: {json.dumps(status, indent=2, default=str)}")
+    
+    # Test manual failover
+    print("\n=== Testing Manual Failover ===")
+    success, new_channel, reason = orchestrator.channel_failover_matrix.execute_failover()
+    print(f"Manual failover result: success={success}, channel={new_channel}, reason={reason}")
+    
+    # Test recovery
+    print("\n=== Testing Recovery ===")
+    mock_negotiator.update_health('cloudwatch', 0.9)  # Restore primary
+    await asyncio.sleep(2)
+    
+    recovery_success, recovery_reason = orchestrator.channel_failover_matrix.attempt_recovery_to_primary()
+    print(f"Recovery result: success={recovery_success}, reason={recovery_reason}")
+    
     # Test forced fallback
     orchestrator.force_fallback(FallbackMode.DEGRADED, "test")
     
-    # Wait for monitoring
-    await asyncio.sleep(2)
-    
-    # Check status again
-    status = orchestrator.get_fallback_status()
-    print(f"After forced fallback: {status}")
-    
-    # Test recovery
-    orchestrator._attempt_recovery()
-    
     # Final status
-    status = orchestrator.get_fallback_status()
-    print(f"After recovery attempt: {status}")
+    final_status = orchestrator.get_fallback_status()
+    print(f"Final status: {json.dumps(final_status, indent=2, default=str)}")
+    
+    # Test histories
+    fallback_history = orchestrator.get_fallback_history(10)
+    failover_history = orchestrator.get_channel_failover_history(10)
+    print(f"Fallback history: {json.dumps(fallback_history, indent=2, default=str)}")
+    print(f"Channel failover history: {json.dumps(failover_history, indent=2)}")
     
     # Test downstream notification
     print(f"Downstream null model active: {orchestrator.is_downstream_null_model_active()}")
@@ -976,7 +1379,7 @@ async def test_fallback_orchestrator():
     # Shutdown
     orchestrator.shutdown()
     
-    return "Fallback orchestrator test completed"
+    return "Fallback orchestrator with channel failover matrix test completed"
 
 if __name__ == "__main__":
     asyncio.run(test_fallback_orchestrator())

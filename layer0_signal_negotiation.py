@@ -58,6 +58,7 @@ class ChannelType(Enum):
     LOCAL_BUFFER = "local_buffer"
     METRIC_API = "metric_api"
     SIDE_CHANNEL = "side_channel"
+    SQS = "sqs"
 
 class CompressionType(Enum):
     """Available compression algorithms"""
@@ -654,10 +655,14 @@ class SignalNegotiator:
             'negotiation_metrics': self.negotiation_metrics.copy()
         }
     
-    def get_channel_recommendations(self) -> List[Tuple[ChannelType, float, str]]:
+    def get_channel_recommendations(self, payload_size: int = 1024, priority: str = "balanced") -> List[Tuple[ChannelType, float, str]]:
         """
-        Get channel recommendations based on QoS scores
+        Get channel recommendations based on QoS scores and payload requirements
         
+        Args:
+            payload_size: Size of payload in bytes
+            priority: Priority strategy ("balanced", "speed", "ratio", "cost")
+            
         Returns:
             List of (channel_type, qos_score, recommendation) tuples
         """
@@ -665,7 +670,15 @@ class SignalNegotiator:
         
         for channel_type, result in self.negotiated_channels.items():
             if result.status == NegotiationStatus.SUCCESS:
-                recommendation = self._generate_channel_recommendation(result)
+                # Apply priority-based filtering
+                if priority == "speed" and result.qos_score < 0.7:
+                    continue  # Skip slower channels for speed priority
+                elif priority == "ratio" and payload_size < 1024:
+                    continue  # Skip compression-heavy channels for small payloads
+                elif priority == "cost" and hasattr(result.negotiated_capabilities, 'cost_per_request') and result.negotiated_capabilities.cost_per_request > 0.01:
+                    continue  # Skip expensive channels for cost priority
+                
+                recommendation = self._generate_channel_recommendation(result, payload_size, priority)
                 recommendations.append((
                     channel_type, 
                     result.qos_score, 
@@ -677,16 +690,40 @@ class SignalNegotiator:
         
         return recommendations
     
-    def _generate_channel_recommendation(self, result: NegotiationResult) -> str:
-        """Generate recommendation for a channel based on its characteristics"""
+    def _generate_channel_recommendation(self, result: NegotiationResult, payload_size: int = 1024, priority: str = "balanced") -> str:
+        """Generate recommendation for a channel based on its characteristics and requirements"""
+        base_recommendation = ""
         if result.qos_score >= 0.9:
-            return "Primary channel - excellent performance"
+            base_recommendation = "Primary channel - excellent performance"
         elif result.qos_score >= 0.7:
-            return "Secondary channel - good performance"
+            base_recommendation = "Secondary channel - good performance"
         elif result.qos_score >= 0.5:
-            return "Fallback channel - acceptable performance"
+            base_recommendation = "Fallback channel - acceptable performance"
         else:
-            return "Emergency channel - minimal performance"
+            base_recommendation = "Emergency channel - minimal performance"
+        
+        # Add priority-specific recommendations
+        if priority == "speed":
+            if result.qos_score >= 0.8:
+                base_recommendation += " - optimized for speed"
+            else:
+                base_recommendation += " - consider faster alternatives"
+        elif priority == "ratio" and payload_size > 1024:
+            if result.compression_enabled:
+                base_recommendation += " - compression enabled for large payloads"
+            else:
+                base_recommendation += " - no compression (may impact large payloads)"
+        elif priority == "cost":
+            if hasattr(result.negotiated_capabilities, 'cost_per_request'):
+                cost = result.negotiated_capabilities.cost_per_request
+                if cost < 0.001:
+                    base_recommendation += " - low cost"
+                elif cost < 0.01:
+                    base_recommendation += " - moderate cost"
+                else:
+                    base_recommendation += " - high cost"
+        
+        return base_recommendation
     
     def update_channel_health(self, channel_type: ChannelType, 
                             success: bool, latency_ms: float):

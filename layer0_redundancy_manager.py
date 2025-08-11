@@ -135,7 +135,7 @@ class RedundancyManager:
     4. Supporting different redundancy modes
     """
     
-    def __init__(self, config: Layer0Config, signal_negotiator: SignalNegotiator):
+    def __init__(self, config: Layer0Config, signal_negotiator: SignalNegotiator = None):
         self.config = config
         self.telemetry_config = config.telemetry
         self.signal_negotiator = signal_negotiator
@@ -169,7 +169,8 @@ class RedundancyManager:
         
         # Initialize channels
         self._initialize_channel_configs()
-        self._start_background_workers()
+        if signal_negotiator:  # Only start workers if we have a signal negotiator
+            self._start_background_workers()
     
     def _initialize_channel_configs(self):
         """Initialize configuration for all available channels"""
@@ -838,6 +839,160 @@ class RedundancyManager:
                 k.value: v for k, v in self.channel_health.items()
             }
         }
+    
+    def duplicate_telemetry(self, telemetry_record, strategy: str = "active_active") -> Dict[str, Any]:
+        """Duplicate telemetry record for redundancy"""
+        try:
+            # Create telemetry event from record
+            event = TelemetryEvent(
+                event_id=f"dup_{telemetry_record.telemetry_id if hasattr(telemetry_record, 'telemetry_id') else str(uuid.uuid4())}",
+                timestamp=time.time(),
+                payload={
+                    "original_id": getattr(telemetry_record, 'telemetry_id', 'unknown'),
+                    "duplication_strategy": strategy,
+                    "duplication_timestamp": time.time(),
+                    "original_data": telemetry_record.__dict__ if hasattr(telemetry_record, '__dict__') else str(telemetry_record)
+                },
+                source="redundancy_manager",
+                priority=ChannelPriority.PRIMARY
+            )
+            
+            # Add to queue for processing
+            self.event_queue.put(event)
+            
+            return {
+                "duplicated": True,
+                "replica_count": 2 if strategy == "active_active" else 1,
+                "event_id": event.event_id,
+                "strategy": strategy
+            }
+        except Exception as e:
+            logger.error(f"Failed to duplicate telemetry: {e}")
+            return {
+                "duplicated": False,
+                "error": str(e)
+            }
+    
+    def initiate_failover(self, primary_channel: str, standby_channel: str) -> Dict[str, Any]:
+        """Initiate failover from primary to standby channel"""
+        try:
+            logger.info(f"Initiating failover from {primary_channel} to {standby_channel}")
+            
+            # Update channel status
+            if hasattr(self, 'active_channels'):
+                # Mark primary as inactive
+                for channel_type in self.active_channels:
+                    if channel_type.value == primary_channel:
+                        self.active_channels[channel_type] = False
+                
+                # Mark standby as active
+                for channel_type in self.active_channels:
+                    if channel_type.value == standby_channel:
+                        self.active_channels[channel_type] = True
+            
+            return {
+                "failover_initiated": True,
+                "primary_channel": primary_channel,
+                "standby_channel": standby_channel,
+                "timestamp": time.time()
+            }
+        except Exception as e:
+            logger.error(f"Failover failed: {e}")
+            return {
+                "failover_initiated": False,
+                "error": str(e)
+            }
+    
+    def check_duplicate(self, telemetry_id: str) -> Dict[str, Any]:
+        """Check if telemetry ID is a duplicate"""
+        try:
+            # Check if ID exists in dedup window
+            is_duplicate = telemetry_id in self.dedup_window.event_hashes
+            
+            if not is_duplicate:
+                # Add to dedup window
+                self.dedup_window.event_hashes.add(telemetry_id)
+                self.dedup_window.events.append({
+                    "id": telemetry_id,
+                    "timestamp": time.time()
+                })
+            
+            return {
+                "is_duplicate": is_duplicate,
+                "telemetry_id": telemetry_id,
+                "timestamp": time.time(),
+                "dedup_window_size": len(self.dedup_window.event_hashes)
+            }
+        except Exception as e:
+            logger.error(f"Duplicate check failed: {e}")
+            return {
+                "is_duplicate": False,
+                "error": str(e)
+            }
+    
+    def execute_idempotent_operation(self, operation_id: str, operation_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute an idempotent operation"""
+        try:
+            # Check if operation was already executed
+            cache_key = f"idempotent_{operation_id}"
+            
+            if hasattr(self, '_idempotency_cache'):
+                if cache_key in self._idempotency_cache:
+                    # Return cached result
+                    return self._idempotency_cache[cache_key]
+            else:
+                self._idempotency_cache = {}
+            
+            # Execute operation (simulate)
+            result = {
+                "operation_id": operation_id,
+                "executed": True,
+                "timestamp": time.time(),
+                "data": operation_data,
+                "result": f"Operation {operation_id} completed successfully"
+            }
+            
+            # Cache result
+            self._idempotency_cache[cache_key] = result
+            
+            return result
+        except Exception as e:
+            logger.error(f"Idempotent operation failed: {e}")
+            return {
+                "operation_id": operation_id,
+                "executed": False,
+                "error": str(e)
+            }
+    
+    def resolve_conflicts(self, conflicts: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Resolve conflicts between multiple telemetry sources"""
+        try:
+            if not conflicts:
+                return {"consensus_value": None, "conflicts_resolved": 0}
+            
+            # Simple consensus: majority wins
+            value_counts = {}
+            for conflict in conflicts:
+                value = conflict.get("value", "unknown")
+                value_counts[value] = value_counts.get(value, 0) + 1
+            
+            # Find most common value
+            consensus_value = max(value_counts.items(), key=lambda x: x[1])[0]
+            consensus_count = value_counts[consensus_value]
+            
+            return {
+                "consensus_value": consensus_value,
+                "consensus_count": consensus_count,
+                "total_conflicts": len(conflicts),
+                "conflicts_resolved": len(conflicts),
+                "resolution_method": "majority_vote"
+            }
+        except Exception as e:
+            logger.error(f"Conflict resolution failed: {e}")
+            return {
+                "consensus_value": None,
+                "error": str(e)
+            }
     
     def set_redundancy_mode(self, mode: RedundancyMode):
         """Change redundancy mode"""

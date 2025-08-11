@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(python test:*)",
-      "Bash(python -m pytest test_adversarial.py -v)"
+      "Bash(python -m pytest test_adversarial.py -v)",
+      "Bash(python3:*)",
+      "Bash(/usr/bin/python3:*)",
+      "Bash(python:*)"
     ],
     "deny": []
   }
