@@ -494,19 +494,41 @@ def _generate_reproducibility_report():
 if __name__ == "__main__":
     """Main entry point for reproducibility validation"""
     
-    print("🔬 SCAFAD Layer 0 - Reproducibility Validation")
-    print("=" * 50)
+    try:
+        print("🔬 SCAFAD Layer 0 - Reproducibility Validation")
+        print("=" * 50)
+        
+        success = run_reproducibility_validation()
+        
+        if success:
+            print("\n🎉 REPRODUCIBILITY VALIDATION: PASSED")
+            print("✅ All results are deterministic and reproducible")
+            print("📊 Report saved to: reproducibility_report.json")
+            print("📁 Environment state saved to: environment_state.json")
+            sys.exit(0)
+        else:
+            print("\n❌ REPRODUCIBILITY VALIDATION: FAILED")
+            print("⚠️ Some results are not reproducible")
+            print("🔍 Check reproduction_log.txt for details")
+            sys.exit(1)
     
-    success = run_reproducibility_validation()
-    
-    if success:
-        print("\n🎉 REPRODUCIBILITY VALIDATION: PASSED")
-        print("✅ All results are deterministic and reproducible")
-        print("📊 Report saved to: reproducibility_report.json")
-        print("📁 Environment state saved to: environment_state.json")
-        sys.exit(0)
-    else:
-        print("\n❌ REPRODUCIBILITY VALIDATION: FAILED")
-        print("⚠️ Some results are not reproducible")
-        print("🔍 Check reproduction_log.txt for details")
+    except KeyboardInterrupt:
+        print("\n⚠️ Validation interrupted by user")
         sys.exit(1)
+    
+    except Exception as e:
+        print(f"\n💥 UNEXPECTED ERROR: {e}")
+        print("🔍 This indicates a configuration or environment issue")
+        print("📝 Check Python version, dependencies, and file permissions")
+        
+        # Try to save error details
+        try:
+            with open("validation_error.log", "w") as f:
+                f.write(f"Reproducibility validation error: {e}\n")
+                f.write(f"Python version: {sys.version}\n")
+                f.write(f"Platform: {sys.platform}\n")
+            print("📁 Error details saved to: validation_error.log")
+        except:
+            pass  # Don't fail on error logging
+        
+        sys.exit(2)

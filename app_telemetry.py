@@ -25,9 +25,17 @@ from dataclasses import dataclass, field, asdict
 from enum import Enum
 from datetime import datetime, timedelta
 import warnings
+from pathlib import Path
 
 # Import configuration
 from app_config import Layer0Config, TelemetryConfig, VerbosityLevel
+
+# Optional async file operations
+try:
+    import aiofiles
+    HAS_AIOFILES = True
+except ImportError:
+    HAS_AIOFILES = False
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -1288,32 +1296,422 @@ class MultiChannelTelemetry:
         }
     
     async def _emit_immediate(self, telemetry: TelemetryRecord) -> Dict[str, Dict]:
-        """Emit immediately to all channels"""
+        """Emit immediately to all channels with intelligent failover"""
         
         results = {}
         
-        # Primary channel first (most important)
+        # Priority order for channel attempts
+        channel_priority = ['primary', 'cloudwatch', 'side_trace', 'metrics']
+        
+        # Try primary channel first (most important)
+        primary_success = False
         if 'primary' in self.channels:
             results['primary'] = await self._emit_to_channel('primary', telemetry)
+            primary_success = results['primary']['success']
         
-        # Parallel emission to other channels
-        other_channels = [name for name in self.channels.keys() if name != 'primary']
+        # If primary fails, immediately attempt failover
+        if not primary_success:
+            logger.warning("Primary channel emission failed, triggering failover sequence")
+            await self._trigger_failover_sequence(telemetry, results)
         
-        if other_channels:
-            other_results = await asyncio.gather(*[
-                self._emit_to_channel_safe(name, telemetry) 
-                for name in other_channels
-            ], return_exceptions=True)
-            
-            for i, result in enumerate(other_results):
-                channel_name = other_channels[i]
-                if isinstance(result, Exception):
-                    results[channel_name] = {'success': False, 'error': str(result)}
-                else:
-                    results[channel_name] = result
+        # Attempt remaining channels based on configuration
+        for channel_name in channel_priority[1:]:
+            if channel_name in self.channels and channel_name not in results:
+                results[channel_name] = await self._emit_to_channel(channel_name, telemetry)
         
         return results
     
+    async def _trigger_failover_sequence(self, telemetry: TelemetryRecord, existing_results: Dict):
+        """Trigger intelligent failover sequence when primary channel fails"""
+        
+        self.emission_stats['fallback_emissions'] += 1
+        
+        # Mark telemetry as in fallback mode
+        telemetry.fallback_mode = True
+        telemetry.add_custom_field('failover_triggered', True)
+        telemetry.add_custom_field('failover_timestamp', time.time())
+        
+        # Try CloudWatch as immediate fallback
+        if 'cloudwatch' in self.channels:
+            logger.info("Attempting CloudWatch fallback emission")
+            cloudwatch_result = await self._emit_to_channel('cloudwatch', telemetry, priority=True)
+            existing_results['cloudwatch'] = cloudwatch_result
+            
+            if cloudwatch_result['success']:
+                logger.info("CloudWatch failover emission successful")
+                telemetry.add_custom_field('failover_success_channel', 'cloudwatch')
+                return
+        
+        # If CloudWatch also fails, try side trace
+        if 'side_trace' in self.channels:
+            logger.info("Attempting side trace failover emission")  
+            side_trace_result = await self._emit_to_channel('side_trace', telemetry, priority=True)
+            existing_results['side_trace'] = side_trace_result
+            
+            if side_trace_result['success']:
+                logger.info("Side trace failover emission successful")
+                telemetry.add_custom_field('failover_success_channel', 'side_trace')
+                return
+        
+        # Last resort: local file backup
+        logger.error("All channels failed, attempting local file backup")
+        backup_result = await self._emit_to_local_backup(telemetry)
+        existing_results['local_backup'] = backup_result
+        
+        if backup_result['success']:
+            telemetry.add_custom_field('failover_success_channel', 'local_backup')
+        else:
+            logger.critical("Complete telemetry emission failure - all channels failed")
+            telemetry.add_custom_field('complete_emission_failure', True)
+    
+    async def _emit_to_local_backup(self, telemetry: TelemetryRecord) -> Dict[str, Any]:
+        """Emergency local file backup when all channels fail"""
+        
+        try:
+            backup_file = Path("telemetry_backup.jsonl")
+            telemetry_data = {
+                'timestamp': telemetry.timestamp,
+                'event_id': telemetry.event_id,
+                'function_id': telemetry.function_id,
+                'anomaly_type': telemetry.anomaly_type.value,
+                'fallback_mode': True,
+                'backup_emission': True,
+                'telemetry_record': telemetry.to_dict()
+            }
+            
+            # Append to backup file
+            with open(backup_file, 'a') as f:
+                f.write(json.dumps(telemetry_data) + '\n')
+            
+            logger.info(f"Telemetry backed up locally to {backup_file}")
+            
+            return {
+                'success': True,
+                'channel': 'local_backup',
+                'backup_file': str(backup_file),
+                'timestamp': time.time()
+            }
+            
+        except Exception as e:
+            logger.error(f"Local backup emission failed: {e}")
+            return {
+                'success': False,
+                'channel': 'local_backup', 
+                'error': str(e),
+                'timestamp': time.time()
+            }
+    
+    async def handle_channel_failure(self, channel_name: str) -> bool:
+        """Handle individual channel failures with monitoring and recovery"""
+        
+        logger.warning(f"Channel failure detected: {channel_name}")
+        
+        # Increment failure counter
+        self.emission_stats['channel_failures'][channel_name] += 1
+        
+        # Check if channel needs to be disabled
+        failure_threshold = 5  # Disable after 5 consecutive failures
+        if self.emission_stats['channel_failures'][channel_name] >= failure_threshold:
+            logger.error(f"Channel {channel_name} exceeded failure threshold, disabling temporarily")
+            await self._disable_channel_temporarily(channel_name)
+            return False
+        
+        # Attempt channel health check
+        if hasattr(self.channels.get(channel_name), 'health_check'):
+            try:
+                health_status = await self.channels[channel_name].health_check()
+                if health_status['healthy']:
+                    logger.info(f"Channel {channel_name} health check passed, resetting failure count")
+                    self.emission_stats['channel_failures'][channel_name] = 0
+                    return True
+            except Exception as e:
+                logger.error(f"Health check failed for channel {channel_name}: {e}")
+        
+        return True
+    
+    async def _disable_channel_temporarily(self, channel_name: str):
+        """Temporarily disable a failing channel"""
+        
+        if channel_name in self.channels:
+            # Store reference for potential recovery
+            disabled_channel = self.channels.pop(channel_name)
+            
+            # Schedule recovery attempt in 5 minutes
+            asyncio.create_task(self._schedule_channel_recovery(channel_name, disabled_channel, 300))
+            
+            logger.warning(f"Channel {channel_name} temporarily disabled, recovery scheduled in 5 minutes")
+    
+    async def _schedule_channel_recovery(self, channel_name: str, channel_instance: Any, delay_seconds: int):
+        """Schedule channel recovery after temporary disable"""
+        
+        await asyncio.sleep(delay_seconds)
+        
+        try:
+            # Attempt to restore channel
+            if hasattr(channel_instance, 'health_check'):
+                health_status = await channel_instance.health_check()
+                if health_status['healthy']:
+                    self.channels[channel_name] = channel_instance
+                    self.emission_stats['channel_failures'][channel_name] = 0
+                    logger.info(f"Channel {channel_name} successfully recovered and re-enabled")
+                else:
+                    logger.warning(f"Channel {channel_name} recovery failed - health check unsuccessful")
+                    # Schedule another recovery attempt in 10 minutes
+                    asyncio.create_task(self._schedule_channel_recovery(channel_name, channel_instance, 600))
+            else:
+                # No health check available, restore anyway
+                self.channels[channel_name] = channel_instance
+                self.emission_stats['channel_failures'][channel_name] = 0
+                logger.info(f"Channel {channel_name} restored (no health check available)")
+        
+        except Exception as e:
+            logger.error(f"Channel recovery failed for {channel_name}: {e}")
+            # Schedule another recovery attempt in 15 minutes
+            asyncio.create_task(self._schedule_channel_recovery(channel_name, channel_instance, 900))
+    
+    def monitor_channel_health(self) -> Dict[str, Any]:
+        """Monitor health of all channels and return status"""
+        
+        channel_health = {}
+        
+        for channel_name, channel in self.channels.items():
+            failure_count = self.emission_stats['channel_failures'][channel_name]
+            
+            health_status = {
+                'channel_name': channel_name,
+                'active': True,
+                'failure_count': failure_count,
+                'health_score': max(0.0, 1.0 - (failure_count / 10.0)),  # Decreases with failures
+                'last_failure': None
+            }
+            
+            # Add channel-specific health information
+            if hasattr(channel, 'get_health_info'):
+                try:
+                    channel_health_info = channel.get_health_info()
+                    health_status.update(channel_health_info)
+                except Exception as e:
+                    health_status['health_check_error'] = str(e)
+            
+            channel_health[channel_name] = health_status
+        
+        return {
+            'overall_health': self._calculate_overall_health(channel_health),
+            'channel_details': channel_health,
+            'total_channels': len(self.channels),
+            'active_channels': len([c for c in channel_health.values() if c['active']]),
+            'emission_stats': self.emission_stats.copy()
+        }
+    
+    def _calculate_overall_health(self, channel_health: Dict) -> float:
+        """Calculate overall telemetry system health score"""
+        
+        if not channel_health:
+            return 0.0
+        
+        health_scores = [ch['health_score'] for ch in channel_health.values()]
+        average_health = sum(health_scores) / len(health_scores)
+        
+        # Bonus for having multiple healthy channels
+        healthy_channels = len([ch for ch in channel_health.values() if ch['health_score'] > 0.7])
+        redundancy_bonus = min(0.2, healthy_channels * 0.05)
+        
+        return min(1.0, average_health + redundancy_bonus)
+    
+    async def _emit_to_channel(self, channel_name: str, telemetry: TelemetryRecord, priority: bool = False) -> Dict[str, Any]:
+        """Emit telemetry to a specific channel with error handling"""
+        
+        if channel_name not in self.channels:
+            return {
+                'success': False,
+                'error': f'Channel {channel_name} not available',
+                'channel': channel_name,
+                'timestamp': time.time()
+            }
+        
+        try:
+            channel = self.channels[channel_name]
+            
+            # Attempt emission
+            if hasattr(channel, 'emit_async'):
+                result = await channel.emit_async(telemetry, priority=priority)
+            elif hasattr(channel, 'emit'):
+                result = channel.emit(telemetry)
+            else:
+                # Fallback for simple channels
+                result = {'success': True, 'timestamp': time.time()}
+            
+            # Ensure result has required fields
+            if isinstance(result, bool):
+                result = {'success': result, 'timestamp': time.time()}
+            
+            result['channel'] = channel_name
+            return result
+            
+        except Exception as e:
+            logger.error(f"Channel {channel_name} emission failed: {e}")
+            await self.handle_channel_failure(channel_name)
+            
+            return {
+                'success': False,
+                'error': str(e),
+                'channel': channel_name,
+                'timestamp': time.time()
+            }
+    
+    async def create_normal_telemetry(self, event: Dict, context: Any) -> TelemetryRecord:
+        """Create normal telemetry record (wrapper for generator)"""
+        return await self.generator.generate_telemetry(event, context)
+    
+    async def create_fallback_telemetry(self, event: Dict, context: Any, error: Exception) -> TelemetryRecord:
+        """Create minimal fallback telemetry when processing fails"""
+        
+        try:
+            # Create minimal telemetry with error information
+            fallback_telemetry = TelemetryRecord(
+                event_id=f"fallback_{int(time.time())}_{random.randint(1000, 9999)}",
+                timestamp=time.time(),
+                function_id=getattr(context, 'function_name', 'unknown'),
+                execution_phase=ExecutionPhase.ERROR,
+                anomaly_type=AnomalyType.EXECUTION_FAILURE,
+                duration=0.001,  # Minimal duration
+                memory_spike_kb=1024,  # Minimal memory
+                cpu_utilization=0.0,
+                network_io_bytes=0,
+                fallback_mode=True,
+                source=TelemetrySource.FALLBACK
+            )
+            
+            # Add error context
+            fallback_telemetry.add_custom_field('error_message', str(error))
+            fallback_telemetry.add_custom_field('error_type', type(error).__name__)
+            fallback_telemetry.add_custom_field('original_event', json.dumps(event)[:500])  # Truncate
+            
+            return fallback_telemetry
+            
+        except Exception as fallback_error:
+            logger.error(f"Fallback telemetry creation failed: {fallback_error}")
+            
+            # Ultra-minimal fallback
+            return TelemetryRecord(
+                event_id=f"emergency_{int(time.time())}",
+                timestamp=time.time(),
+                function_id="emergency_fallback",
+                execution_phase=ExecutionPhase.ERROR,
+                anomaly_type=AnomalyType.EXECUTION_FAILURE,
+                duration=0.001,
+                memory_spike_kb=1024,
+                cpu_utilization=0.0,
+                network_io_bytes=0,
+                fallback_mode=True,
+                source=TelemetrySource.FALLBACK
+            )
+    
+    def get_performance_metrics(self) -> Dict[str, Any]:
+        """Get current telemetry system performance metrics"""
+        
+        total_emissions = self.emission_stats['total_emissions']
+        if total_emissions == 0:
+            return self.emission_stats
+        
+        return {
+            **self.emission_stats,
+            'success_rate': self.emission_stats['successful_emissions'] / total_emissions,
+            'fallback_rate': self.emission_stats['fallback_emissions'] / total_emissions,
+            'channel_health_score': sum(self.channel_health.values()) / len(self.channel_health) if self.channel_health else 0.0,
+            'average_latency_ms': sum(self.performance_history) / len(self.performance_history) * 1000 if self.performance_history else 0.0,
+            'healthy_channels': [name for name, health in self.channel_health.items() if health > 0.7],
+            'degraded_channels': [name for name, health in self.channel_health.items() if 0.3 <= health <= 0.7],
+            'failed_channels': [name for name, health in self.channel_health.items() if health < 0.3]
+        }
+
+
+# =============================================================================
+# Fallback Telemetry Processor  
+# =============================================================================
+
+class FallbackTelemetryProcessor:
+    """
+    Emergency telemetry processing when all channels fail
+    """
+    
+    def __init__(self, config: TelemetryConfig):
+        self.config = config
+        self.local_buffer = []
+        self.buffer_limit = 1000
+        self.emergency_file = Path("emergency_telemetry.jsonl")
+        
+    async def process_emergency_telemetry(self, telemetry: TelemetryRecord) -> Dict[str, Any]:
+        """Process telemetry when all standard channels are down"""
+        
+        try:
+            # Add to local buffer
+            telemetry_data = telemetry.to_dict()
+            telemetry_data['emergency_processed'] = True
+            telemetry_data['emergency_timestamp'] = time.time()
+            
+            self.local_buffer.append(telemetry_data)
+            
+            # Manage buffer size
+            if len(self.local_buffer) > self.buffer_limit:
+                await self._flush_emergency_buffer()
+            
+            # Try to write to emergency file
+            await self._write_to_emergency_file(telemetry_data)
+            
+            return {
+                'success': True,
+                'method': 'emergency_processing',
+                'buffer_size': len(self.local_buffer),
+                'timestamp': time.time()
+            }
+            
+        except Exception as e:
+            logger.error(f"Emergency telemetry processing failed: {e}")
+            return {
+                'success': False,
+                'error': str(e),
+                'method': 'emergency_processing',
+                'timestamp': time.time()
+            }
+    
+    async def _write_to_emergency_file(self, telemetry_data: Dict):
+        """Write telemetry to emergency file"""
+        try:
+            if HAS_AIOFILES:
+                async with aiofiles.open(self.emergency_file, 'a') as f:
+                    await f.write(json.dumps(telemetry_data) + '\n')
+            else:
+                # Fallback to synchronous file operations
+                with open(self.emergency_file, 'a') as f:
+                    f.write(json.dumps(telemetry_data) + '\n')
+        except Exception as e:
+            logger.warning(f"Failed to write to emergency file: {e}")
+    
+    async def _flush_emergency_buffer(self):
+        """Flush emergency buffer when limit is reached"""
+        if not self.local_buffer:
+            return
+        
+        try:
+            # Remove oldest entries to maintain buffer limit
+            excess = len(self.local_buffer) - self.buffer_limit
+            if excess > 0:
+                self.local_buffer = self.local_buffer[excess:]
+                
+            logger.info(f"Emergency buffer flushed, maintaining {len(self.local_buffer)} entries")
+            
+        except Exception as e:
+            logger.error(f"Buffer flush failed: {e}")
+    
+    def get_emergency_stats(self) -> Dict[str, Any]:
+        """Get emergency processing statistics"""
+        return {
+            'buffer_size': len(self.local_buffer),
+            'buffer_limit': self.buffer_limit,
+            'emergency_file_exists': self.emergency_file.exists(),
+            'emergency_file_size': self.emergency_file.stat().st_size if self.emergency_file.exists() else 0
+        }
     async def _emit_with_queue(self, telemetry: TelemetryRecord) -> Dict[str, Dict]:
         """Emit using priority queue for better throughput"""
         
