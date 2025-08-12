@@ -155,8 +155,9 @@ class ServerlessExecutionGraph:
         """Add a node to the graph"""
         if len(self.nodes) >= self.max_nodes:
             # Remove oldest nodes to maintain size limit
+            # ACADEMIC FIX: Deterministic ordering for reproducibility
             oldest_nodes = sorted(self.nodes.keys(), 
-                                key=lambda k: self.nodes[k].timestamp)
+                                key=lambda k: (self.nodes[k].timestamp, k))  # Secondary sort by ID
             for old_id in oldest_nodes[:len(oldest_nodes) // 4]:  # Remove 25%
                 self.remove_node(old_id)
         

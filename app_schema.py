@@ -316,17 +316,60 @@ class SchemaValidator:
         return self._check_type(value, config)
     
     def _validate_range(self, value: Any, config: Dict, field: str) -> bool:
-        """Validate range constraint"""
+        """Validate range constraint with comprehensive bounds checking"""
         if not isinstance(value, (int, float)):
             return True  # Skip range validation for non-numeric values
         
+        # CRITICAL FIX #2: Enhanced bounds checking
+        # Check for extreme values that could cause overflow
+        if isinstance(value, float):
+            if abs(value) > 1e308:  # Near float64 max
+                logger.warning(f"Field {field}: value {value} exceeds safe float range")
+                return False
+            if value != value:  # NaN check
+                logger.warning(f"Field {field}: NaN value detected")
+                return False
+            if value == float('inf') or value == float('-inf'):
+                logger.warning(f"Field {field}: infinite value detected")
+                return False
+        
+        if isinstance(value, int):
+            if abs(value) > 2**63 - 1:  # 64-bit signed int max
+                logger.warning(f"Field {field}: value {value} exceeds safe integer range")
+                return False
+        
+        # Original range validation
         min_val = config.get('min')
         max_val = config.get('max')
         
         if min_val is not None and value < min_val:
+            logger.warning(f"Field {field}: value {value} below minimum {min_val}")
             return False
         if max_val is not None and value > max_val:
+            logger.warning(f"Field {field}: value {value} above maximum {max_val}")
             return False
+        
+        # Additional safety checks for specific fields
+        if field in ['duration', 'execution_time_ms', 'processing_time_ms']:
+            if value < 0:
+                logger.warning(f"Field {field}: negative time value {value}")
+                return False
+            if value > 86400000:  # 24 hours in ms
+                logger.warning(f"Field {field}: unrealistic time value {value}ms")
+                return False
+        
+        if field in ['memory_spike_kb', 'memory_limit_mb']:
+            if value < 0:
+                logger.warning(f"Field {field}: negative memory value {value}")
+                return False
+            if value > 1024000:  # 1TB in KB/MB
+                logger.warning(f"Field {field}: unrealistic memory value {value}")
+                return False
+        
+        if field in ['cpu_utilization']:
+            if value < 0 or value > 100:
+                logger.warning(f"Field {field}: CPU utilization {value}% out of valid range [0-100]")
+                return False
         
         return True
     

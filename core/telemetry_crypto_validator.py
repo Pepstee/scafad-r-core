@@ -560,6 +560,7 @@ class ParallelTelemetryValidator:
                             "z_score": z_score
                         })
         
+        # CRITICAL FIX #6: Enhanced Byzantine fault detection
         # Check for duplicate or near-duplicate records (potential replay attacks)
         record_hashes = {}
         for i, record in enumerate(records):
@@ -574,6 +575,66 @@ class ParallelTelemetryValidator:
                 })
             else:
                 record_hashes[record_hash] = i
+        
+        # Check for signature validation (if records are signed)
+        signature_faults = 0
+        for i, record in enumerate(records):
+            if hasattr(record, 'signature') and record.signature:
+                # If we have access to the signing key, verify signature
+                if hasattr(self, 'signing_key') and self.signing_key:
+                    if not record.verify_signature(self.signing_key):
+                        signature_faults += 1
+                        fault_count += 1
+                        suspicious_records.append({
+                            "index": i,
+                            "record_id": record.event_id,
+                            "anomaly_type": "signature_verification_failed"
+                        })
+        
+        # Check for content hash mismatches
+        content_hash_faults = 0
+        for i, record in enumerate(records):
+            if hasattr(record, 'content_hash') and record.content_hash:
+                expected_hash = record._compute_content_hash()
+                if expected_hash != record.content_hash:
+                    content_hash_faults += 1
+                    fault_count += 1
+                    suspicious_records.append({
+                        "index": i,
+                        "record_id": record.event_id,
+                        "anomaly_type": "content_hash_mismatch",
+                        "expected_hash": expected_hash,
+                        "actual_hash": record.content_hash
+                    })
+        
+        # Check for impossible metric combinations
+        impossible_metrics = 0
+        for i, record in enumerate(records):
+            # Check for impossible duration/CPU combinations
+            if record.duration > 0 and record.cpu_utilization == 0:
+                if record.duration > 0.1:  # More than 100ms with 0% CPU is suspicious
+                    impossible_metrics += 1
+                    suspicious_records.append({
+                        "index": i,
+                        "record_id": record.event_id,
+                        "anomaly_type": "impossible_cpu_duration",
+                        "duration": record.duration,
+                        "cpu_utilization": record.cpu_utilization
+                    })
+            
+            # Check for impossible memory/duration combinations
+            if record.memory_spike_kb > 1000000 and record.duration < 0.001:  # 1GB spike in <1ms
+                impossible_metrics += 1
+                suspicious_records.append({
+                    "index": i,
+                    "record_id": record.event_id,
+                    "anomaly_type": "impossible_memory_duration",
+                    "memory_spike_kb": record.memory_spike_kb,
+                    "duration": record.duration
+                })
+        
+        if impossible_metrics > 0:
+            fault_count += impossible_metrics
         
         # Check timestamp ordering (records should be roughly chronological)
         timestamps = [r.timestamp for r in records]

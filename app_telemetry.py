@@ -261,6 +261,11 @@ class TelemetryRecord:
     custom_fields: Dict[str, Any] = field(default_factory=dict)
     tags: Dict[str, str] = field(default_factory=dict)
     
+    # CRITICAL FIX #3: Cryptographic integrity
+    signature: Optional[str] = None
+    signature_algorithm: str = "HMAC-SHA256"
+    content_hash: Optional[str] = None
+    
     def __post_init__(self):
         """Post-initialization validation and enrichment"""
         
@@ -429,6 +434,84 @@ class TelemetryRecord:
             data['source'] = TelemetrySource(updates['source'])
         
         return TelemetryRecord(**data)
+    
+    def sign_record(self, secret_key: str) -> None:
+        """
+        CRITICAL FIX #3: Sign telemetry record for integrity verification
+        
+        Args:
+            secret_key: Secret key for HMAC signing
+        """
+        # Generate content hash for verification
+        self.content_hash = self._compute_content_hash()
+        
+        # Create signature
+        if secret_key:
+            self.signature = self._generate_hmac_signature(secret_key)
+        else:
+            logger.warning("No secret key provided for telemetry signing")
+    
+    def verify_signature(self, secret_key: str) -> bool:
+        """
+        Verify telemetry record signature
+        
+        Args:
+            secret_key: Secret key for verification
+            
+        Returns:
+            True if signature is valid, False otherwise
+        """
+        if not self.signature or not self.content_hash:
+            return False
+        
+        # Verify content hash
+        expected_hash = self._compute_content_hash()
+        if expected_hash != self.content_hash:
+            logger.warning(f"Content hash mismatch for record {self.event_id}")
+            return False
+        
+        # Verify signature
+        expected_signature = self._generate_hmac_signature(secret_key)
+        if expected_signature != self.signature:
+            logger.warning(f"Signature verification failed for record {self.event_id}")
+            return False
+        
+        return True
+    
+    def _compute_content_hash(self) -> str:
+        """Compute SHA-256 hash of record content"""
+        # Create deterministic content representation
+        content_data = {
+            "event_id": self.event_id,
+            "timestamp": self.timestamp,
+            "function_id": self.function_id,
+            "execution_phase": self.execution_phase.value,
+            "anomaly_type": self.anomaly_type.value,
+            "duration": self.duration,
+            "memory_spike_kb": self.memory_spike_kb,
+            "cpu_utilization": self.cpu_utilization,
+            "network_io_bytes": self.network_io_bytes,
+            "source": self.source.value
+        }
+        
+        # Create canonical JSON representation
+        canonical_json = json.dumps(content_data, sort_keys=True, separators=(',', ':'))
+        
+        # Compute SHA-256 hash
+        return hashlib.sha256(canonical_json.encode('utf-8')).hexdigest()
+    
+    def _generate_hmac_signature(self, secret_key: str) -> str:
+        """Generate HMAC-SHA256 signature"""
+        import hmac
+        
+        # Use content hash as message
+        message = self.content_hash.encode('utf-8')
+        key = secret_key.encode('utf-8')
+        
+        # Generate HMAC-SHA256
+        signature = hmac.new(key, message, hashlib.sha256).hexdigest()
+        
+        return signature
 
 
 # =============================================================================

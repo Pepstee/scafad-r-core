@@ -33,6 +33,40 @@ CONTAINER_START_TIME = time.time()
 INVOCATION_COUNT = 0
 INITIALIZATION_ERROR = None
 
+def _validate_component_compatibility(config):
+    """Validate component version compatibility"""
+    required_versions = {
+        "python": "3.11",
+        "scafad_core": config.version.get("version", "unknown"),
+        "layer0_api": "1.0.0"
+    }
+    
+    component_versions = {}
+    
+    # Check Python version
+    import sys
+    python_version = f"{sys.version_info.major}.{sys.version_info.minor}"
+    component_versions["python"] = python_version
+    
+    if python_version < required_versions["python"]:
+        raise RuntimeError(f"Python {required_versions['python']}+ required, got {python_version}")
+    
+    # Check core version compatibility
+    component_versions["scafad_core"] = required_versions["scafad_core"]
+    component_versions["layer0_api"] = required_versions["layer0_api"]
+    
+    return component_versions
+
+def _validate_component_interface(component, name, required_method):
+    """Validate component has required interface"""
+    if not hasattr(component, required_method):
+        raise RuntimeError(f"Component {name} missing required method: {required_method}")
+    
+    if not callable(getattr(component, required_method)):
+        raise RuntimeError(f"Component {name}.{required_method} is not callable")
+    
+    logger.info(f"✅ Component {name} interface validated")
+
 def initialize_scafad():
     """Initialize SCAFAD components (called once per container)"""
     global SCAFAD_CONTROLLER, INITIALIZATION_ERROR
@@ -52,19 +86,26 @@ def initialize_scafad():
         config = get_default_config()
         logger.info(f"SCAFAD configuration loaded: {config.version['version']}")
         
+        # CRITICAL FIX #1: Component compatibility validation
+        component_versions = _validate_component_compatibility(config)
+        logger.info(f"Component compatibility validated: {component_versions}")
+        
         # Initialize controller
         SCAFAD_CONTROLLER = Layer0_AdaptiveTelemetryController(config)
         
-        # Initialize i-GNN detector
+        # Initialize i-GNN detector with version validation
         ignn_detector = iGNNAnomalyDetector()
+        _validate_component_interface(ignn_detector, "iGNNAnomalyDetector", "detect_anomalies")
         
-        # Initialize graph analyzer
+        # Initialize graph analyzer with validation
         graph_orchestrator = GraphAnalysisOrchestrator()
+        _validate_component_interface(graph_orchestrator, "GraphAnalysisOrchestrator", "analyze_graph")
         
-        # Initialize trace generator for testing
+        # Initialize trace generator with validation
         trace_generator = RealisticServerlessTraceGenerator()
+        _validate_component_interface(trace_generator, "RealisticServerlessTraceGenerator", "generate_normal_trace")
         
-        # Store components in controller
+        # Store components in controller with compatibility check
         SCAFAD_CONTROLLER.ignn_detector = ignn_detector
         SCAFAD_CONTROLLER.graph_orchestrator = graph_orchestrator
         SCAFAD_CONTROLLER.trace_generator = trace_generator

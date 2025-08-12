@@ -119,6 +119,18 @@ class Layer0_AdaptiveTelemetryController:
             'anomalies_detected': 0,
             'processing_times': []
         }
+        
+        # CRITICAL FIX #4: Backpressure tracking
+        self.backpressure_metrics = {
+            'concurrent_requests': 0,
+            'queue_depth': 0,
+            'memory_usage_mb': 0,
+            'cpu_utilization': 0.0,
+            'last_check_time': time.time()
+        }
+        self.max_concurrent_requests = getattr(config, 'max_concurrent_requests', 50)
+        self.memory_threshold_mb = getattr(config, 'memory_threshold_mb', 2048)
+        self.cpu_threshold = getattr(config, 'cpu_threshold', 80.0)
     
     async def process_invocation(self, event: Dict, context: Any) -> Dict:
         """
@@ -139,6 +151,10 @@ class Layer0_AdaptiveTelemetryController:
         
         start_time = time.time()
         self.performance_metrics['total_invocations'] += 1
+        
+        # CRITICAL FIX #4: Backpressure mechanism
+        if await self._check_backpressure():
+            return await self._handle_backpressure_response(event, context, start_time)
         
         try:
             # Phase 1: Input Processing
@@ -230,14 +246,36 @@ class Layer0_AdaptiveTelemetryController:
         verification_result = await self.formal_verifier.verify_telemetry_completeness(
             [asdict(telemetry)]
         )
-        telemetry.completeness_score = verification_result['overall_score']
         
-        # Multi-channel emission
+        # CRITICAL FIX #7: Validate completeness score bounds
+        raw_score = verification_result['overall_score']
+        if not isinstance(raw_score, (int, float)):
+            logger.warning(f"Invalid completeness score type: {type(raw_score)}, setting to 0.0")
+            telemetry.completeness_score = 0.0
+        elif raw_score < 0.0 or raw_score > 1.0:
+            logger.warning(f"Completeness score {raw_score} out of bounds [0,1], clipping")
+            telemetry.completeness_score = max(0.0, min(1.0, raw_score))
+        else:
+            telemetry.completeness_score = float(raw_score)
+        
+        # CRITICAL FIX #8: Layer 1 contract validation before handoff
+        layer1_validation = self._validate_layer1_contract(telemetry)
+        if not layer1_validation['valid']:
+            logger.error(f"Layer 1 contract validation failed: {layer1_validation['errors']}")
+            # Don't emit invalid data
+            return {
+                'verification': verification_result,
+                'emission': {'status': 'failed', 'reason': 'layer1_contract_violation'},
+                'layer1_validation': layer1_validation
+            }
+        
+        # Multi-channel emission (only if Layer 1 contract is valid)
         emission_result = await self.telemetry_manager.emit_telemetry(telemetry)
         
         return {
             'verification': verification_result,
-            'emission': emission_result
+            'emission': emission_result,
+            'layer1_validation': layer1_validation
         }
     
     def _assemble_response(self, telemetry: TelemetryRecord, verification_result: Dict) -> Dict:
@@ -297,6 +335,193 @@ class Layer0_AdaptiveTelemetryController:
             'anomaly_rate': self.performance_metrics['anomalies_detected'] / total,
             'average_processing_time_ms': avg_processing_time * 1000,
             'graph_metrics': self.graph_builder.get_advanced_graph_metrics() if self.config.enable_graph_analysis else {}
+        }
+    
+    async def _check_backpressure(self) -> bool:
+        """
+        CRITICAL FIX #4: Check if system is under backpressure
+        
+        Returns:
+            True if backpressure detected, False otherwise
+        """
+        current_time = time.time()
+        
+        # Update concurrent request count
+        self.backpressure_metrics['concurrent_requests'] += 1
+        
+        # Check concurrent request limit
+        if self.backpressure_metrics['concurrent_requests'] > self.max_concurrent_requests:
+            logger.warning(f"Backpressure: Concurrent requests ({self.backpressure_metrics['concurrent_requests']}) exceeded limit ({self.max_concurrent_requests})")
+            return True
+        
+        # Check memory usage (simplified check)
+        try:
+            import psutil
+            memory_info = psutil.virtual_memory()
+            memory_used_mb = memory_info.used / (1024 * 1024)
+            self.backpressure_metrics['memory_usage_mb'] = memory_used_mb
+            
+            if memory_used_mb > self.memory_threshold_mb:
+                logger.warning(f"Backpressure: Memory usage ({memory_used_mb:.1f}MB) exceeded threshold ({self.memory_threshold_mb}MB)")
+                return True
+                
+            # Check CPU usage
+            cpu_percent = psutil.cpu_percent(interval=0.1)
+            self.backpressure_metrics['cpu_utilization'] = cpu_percent
+            
+            if cpu_percent > self.cpu_threshold:
+                logger.warning(f"Backpressure: CPU usage ({cpu_percent}%) exceeded threshold ({self.cpu_threshold}%)")
+                return True
+                
+        except ImportError:
+            # psutil not available, use simplified checks
+            pass
+        
+        # Check recent processing times for degradation
+        if len(self.performance_metrics['processing_times']) > 10:
+            recent_times = self.performance_metrics['processing_times'][-10:]
+            avg_recent = sum(recent_times) / len(recent_times)
+            
+            if avg_recent > 5.0:  # 5 second threshold
+                logger.warning(f"Backpressure: Average processing time ({avg_recent:.2f}s) too high")
+                return True
+        
+        return False
+    
+    async def _handle_backpressure_response(self, event: Dict, context: Any, start_time: float) -> Dict:
+        """
+        Handle backpressure by returning simplified response
+        
+        Args:
+            event: Original event
+            context: Lambda context
+            start_time: Request start time
+            
+        Returns:
+            Simplified response indicating backpressure
+        """
+        # Decrement concurrent request count
+        self.backpressure_metrics['concurrent_requests'] = max(0, self.backpressure_metrics['concurrent_requests'] - 1)
+        
+        # Activate fallback mode
+        self.performance_metrics['fallback_activations'] += 1
+        
+        # Generate minimal telemetry record
+        minimal_telemetry = TelemetryRecord(
+            event_id=f"backpressure_{int(time.time() * 1000)}",
+            timestamp=start_time,
+            function_id=event.get('function_id', 'unknown'),
+            execution_phase=ExecutionPhase.INVOKE,
+            anomaly_type=AnomalyType.STARVATION_FALLBACK,
+            duration=time.time() - start_time,
+            memory_spike_kb=0,
+            cpu_utilization=self.backpressure_metrics['cpu_utilization'],
+            network_io_bytes=0,
+            fallback_mode=True,
+            source=TelemetrySource.FALLBACK_GENERATOR,
+            concurrency_id=f"backpressure_{self.backpressure_metrics['concurrent_requests']}"
+        )
+        
+        # Emit minimal telemetry
+        try:
+            await self.telemetry_manager.emit_telemetry(minimal_telemetry)
+        except Exception as e:
+            logger.error(f"Failed to emit backpressure telemetry: {e}")
+        
+        return {
+            'status': 'backpressure_activated',
+            'telemetry_id': minimal_telemetry.event_id,
+            'processing_time_ms': (time.time() - start_time) * 1000,
+            'message': 'System under load - backpressure activated',
+            'backpressure_metrics': self.backpressure_metrics.copy(),
+            'retry_after_seconds': 1.0
+        }
+    
+    def _validate_layer1_contract(self, telemetry: TelemetryRecord) -> Dict[str, Any]:
+        """
+        CRITICAL FIX #8: Validate Layer 1 interface contract
+        
+        Args:
+            telemetry: TelemetryRecord to validate
+            
+        Returns:
+            Validation result with status and any errors
+        """
+        errors = []
+        warnings = []
+        
+        # Required fields validation
+        required_fields = [
+            'event_id', 'timestamp', 'function_id', 'execution_phase',
+            'anomaly_type', 'duration', 'memory_spike_kb', 'cpu_utilization',
+            'network_io_bytes', 'source', 'completeness_score'
+        ]
+        
+        for field in required_fields:
+            if not hasattr(telemetry, field):
+                errors.append(f"Missing required field: {field}")
+            elif getattr(telemetry, field) is None:
+                errors.append(f"Required field {field} is None")
+        
+        # Data type validation
+        if hasattr(telemetry, 'timestamp') and telemetry.timestamp:
+            if not isinstance(telemetry.timestamp, (int, float)):
+                errors.append(f"timestamp must be numeric, got {type(telemetry.timestamp)}")
+        
+        if hasattr(telemetry, 'duration') and telemetry.duration is not None:
+            if not isinstance(telemetry.duration, (int, float)) or telemetry.duration < 0:
+                errors.append(f"duration must be non-negative numeric, got {telemetry.duration}")
+        
+        if hasattr(telemetry, 'completeness_score') and telemetry.completeness_score is not None:
+            if not isinstance(telemetry.completeness_score, (int, float)):
+                errors.append(f"completeness_score must be numeric, got {type(telemetry.completeness_score)}")
+            elif telemetry.completeness_score < 0.0 or telemetry.completeness_score > 1.0:
+                errors.append(f"completeness_score must be in [0,1], got {telemetry.completeness_score}")
+        
+        # Signature validation (if present)
+        if hasattr(telemetry, 'signature') and telemetry.signature:
+            if not hasattr(telemetry, 'content_hash') or not telemetry.content_hash:
+                warnings.append("Signature present but content_hash missing")
+        
+        # Layer 1 specific requirements
+        layer1_requirements = {
+            'minimum_completeness': 0.8,  # Layer 1 requires 80% completeness
+            'maximum_processing_age': 300,  # 5 minutes max age
+            'required_metadata': ['provenance_id', 'source']
+        }
+        
+        # Check completeness threshold
+        if (hasattr(telemetry, 'completeness_score') and 
+            telemetry.completeness_score < layer1_requirements['minimum_completeness']):
+            errors.append(f"Completeness score {telemetry.completeness_score} below Layer 1 minimum {layer1_requirements['minimum_completeness']}")
+        
+        # Check processing age
+        if hasattr(telemetry, 'timestamp') and telemetry.timestamp:
+            import time
+            age = time.time() - telemetry.timestamp
+            if age > layer1_requirements['maximum_processing_age']:
+                warnings.append(f"Telemetry age {age:.1f}s exceeds recommended maximum {layer1_requirements['maximum_processing_age']}s")
+        
+        # Check required metadata
+        for meta_field in layer1_requirements['required_metadata']:
+            if not hasattr(telemetry, meta_field) or getattr(telemetry, meta_field) is None:
+                warnings.append(f"Layer 1 recommended field missing: {meta_field}")
+        
+        # Check anomaly type is valid enum
+        if hasattr(telemetry, 'anomaly_type'):
+            try:
+                from app_telemetry import AnomalyType
+                if not isinstance(telemetry.anomaly_type, AnomalyType):
+                    errors.append(f"anomaly_type must be AnomalyType enum, got {type(telemetry.anomaly_type)}")
+            except ImportError:
+                warnings.append("Could not validate anomaly_type enum")
+        
+        return {
+            'valid': len(errors) == 0,
+            'errors': errors,
+            'warnings': warnings,
+            'layer1_requirements_met': len(errors) == 0 and len(warnings) <= 2,
+            'validation_timestamp': time.time()
         }
 
 
