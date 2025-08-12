@@ -170,7 +170,7 @@ scafad-r-core/
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/yourusername/scafad-lambda.git
+   git clone https://github.com/Pepstee/scafad-lambda.git
    cd scafad-lambda
    ```
 
