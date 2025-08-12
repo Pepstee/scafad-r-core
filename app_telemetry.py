@@ -26,6 +26,7 @@ from enum import Enum
 from datetime import datetime, timedelta
 import warnings
 from pathlib import Path
+from collections import defaultdict
 
 # Import configuration
 from app_config import Layer0Config, TelemetryConfig, VerbosityLevel
@@ -1235,6 +1236,10 @@ class MultiChannelTelemetry:
         # Priority queue for emission
         self.emission_queue = asyncio.PriorityQueue()
         self.emission_worker_running = False
+        
+        # Channel health tracking
+        self.channel_health = {}
+        self.performance_history = []
     
     def _initialize_channels(self):
         """Initialize emission channels based on configuration"""
@@ -1566,7 +1571,7 @@ class MultiChannelTelemetry:
     
     async def create_normal_telemetry(self, event: Dict, context: Any) -> TelemetryRecord:
         """Create normal telemetry record (wrapper for generator)"""
-        return await self.generator.generate_telemetry(event, context)
+        return await self.generator.create_normal_telemetry(event, context)
     
     async def create_fallback_telemetry(self, event: Dict, context: Any, error: Exception) -> TelemetryRecord:
         """Create minimal fallback telemetry when processing fails"""
@@ -1584,7 +1589,7 @@ class MultiChannelTelemetry:
                 cpu_utilization=0.0,
                 network_io_bytes=0,
                 fallback_mode=True,
-                source=TelemetrySource.FALLBACK
+                source=TelemetrySource.FALLBACK_GENERATOR
             )
             
             # Add error context
@@ -1609,7 +1614,7 @@ class MultiChannelTelemetry:
                 cpu_utilization=0.0,
                 network_io_bytes=0,
                 fallback_mode=True,
-                source=TelemetrySource.FALLBACK
+                source=TelemetrySource.FALLBACK_GENERATOR
             )
     
     def get_performance_metrics(self) -> Dict[str, Any]:
@@ -1724,7 +1729,7 @@ class FallbackTelemetryProcessor:
         # In production, this would use actual queueing
         return await self._emit_immediate(telemetry)
     
-    async def _emit_to_channel(self, channel_name: str, telemetry: TelemetryRecord) -> Dict[str, Any]:
+    async def _emit_to_channel_with_timeout(self, channel_name: str, telemetry: TelemetryRecord) -> Dict[str, Any]:
         """Emit to specific channel with timeout and error handling"""
         
         if channel_name not in self.channels:
@@ -1808,8 +1813,6 @@ class FallbackTelemetryProcessor:
 # =============================================================================
 # Telemetry Validation and Quality Assurance
 # =============================================================================
-
-from collections import defaultdict
 
 class TelemetryValidator:
     """Validates telemetry records for quality and completeness"""

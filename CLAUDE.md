@@ -31,7 +31,8 @@ python -m pytest tests/unit/test_handler.py -v  # Unit tests
 make test  # Using Makefile
 
 # Invoke Lambda locally with test payload
-sam local invoke HelloWorldFunction --event payload.json
+sam local invoke SCAFADLayer0Function --event event.json
+sam local invoke SCAFADLayer0Function --event simple_event.json
 make invoke  # Using Makefile
 
 # Simulate multiple anomaly events
@@ -64,10 +65,11 @@ make clean  # Remove build artifacts and telemetry data
 ## Architecture Overview
 
 ### Core Structure
-- **app.py** - Main Lambda handler with Layer 0-6 implementation
-- **layer0_core.py** - Enhanced core detection algorithms with ML models
-- **invoke.py** - SAM CLI integration script for testing and simulation
-- **hello_world/** - Lambda deployment package directory
+- **app_main.py** - Main Lambda handler and Layer 0 orchestrator with modular architecture
+- **app_telemetry.py** - Multi-channel telemetry management and emission system
+- **layer0_core.py** - Enhanced anomaly detection with 26 ML algorithms
+- **layer0_*.py** - Specialized Layer 0 components (buffer, health, privacy, contracts, etc.)
+- **app_config.py** - Centralized configuration management system
 
 ### Layer Architecture (L0-L6)
 1. **L0**: Adaptive Telemetry Controller - Signal processing and fallback handling

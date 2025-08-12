@@ -1,0 +1,89 @@
+# SAM Configuration for SCAFAD Layer 0 Modular Architecture
+version = 0.1
+
+[default.global.parameters]
+stack_name = "scafad-layer0"
+
+[default.build.parameters]
+cached = true
+parallel = true
+
+[default.validate.parameters]
+lint = true
+
+[default.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+resolve_s3 = true
+s3_prefix = "scafad-layer0"
+region = "us-east-1"
+image_repositories = []
+
+[default.package.parameters]
+resolve_s3 = true
+
+[default.sync.parameters]
+watch = true
+
+[default.local_start_api.parameters]
+warm_containers = "EAGER"
+
+[default.local_start_lambda.parameters]
+warm_containers = "EAGER"
+
+[default.local_invoke.parameters]
+parameter_overrides = [
+  "Stage=dev",
+  "VerbosityLevel=VERBOSE",
+  "EnableGraphAnalysis=true",
+  "EnableEconomicMonitoring=true",
+  "EnableProvenanceTracking=true"
+]
+
+# Development Environment
+[dev.deploy.parameters]
+stack_name = "scafad-layer0-dev"
+parameter_overrides = [
+  "Stage=dev",
+  "VerbosityLevel=VERBOSE",
+  "EnableGraphAnalysis=true",
+  "EnableEconomicMonitoring=true",
+  "EnableProvenanceTracking=true"
+]
+tags = [
+  "Project=SCAFAD",
+  "Environment=Development",
+  "Architecture=Modular"
+]
+
+# Staging Environment  
+[staging.deploy.parameters]
+stack_name = "scafad-layer0-staging"
+parameter_overrides = [
+  "Stage=staging",
+  "VerbosityLevel=NORMAL", 
+  "EnableGraphAnalysis=true",
+  "EnableEconomicMonitoring=true",
+  "EnableProvenanceTracking=true"
+]
+tags = [
+  "Project=SCAFAD",
+  "Environment=Staging",
+  "Architecture=Modular"
+]
+
+# Production Environment
+[prod.deploy.parameters]
+stack_name = "scafad-layer0-prod"
+parameter_overrides = [
+  "Stage=prod",
+  "VerbosityLevel=MINIMAL",
+  "EnableGraphAnalysis=true", 
+  "EnableEconomicMonitoring=true",
+  "EnableProvenanceTracking=true"
+]
+tags = [
+  "Project=SCAFAD",
+  "Environment=Production",
+  "Architecture=Modular"
+]

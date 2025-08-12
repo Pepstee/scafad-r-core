@@ -1,0 +1,15 @@
+{
+  "function_id": "test-serverless-function",
+  "execution_phase": "invoke",
+  "anomaly_type": "cpu_spike", 
+  "duration": 1500.0,
+  "memory_spike_kb": 8000,
+  "cpu_utilization": 85.0,
+  "custom_fields": {
+    "region": "us-east-1",
+    "environment": "test",
+    "version": "1.0.0"
+  },
+  "source": "direct_test",
+  "timestamp": 1640995200
+}
