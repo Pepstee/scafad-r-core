@@ -1,0 +1,10 @@
+{
+  "invocation_index": 4,
+  "success": false,
+  "duration": 5.629481792449951,
+  "returncode": 1,
+  "stdout": "",
+  "stderr": "scafad-test-stack-HelloWorldFunction-k79tX3iBcK74 not found. Possible options in your template: ['HelloWorldFunction']\nError: Function scafad-test-stack-HelloWorldFunction-k79tX3iBcK74 not found in template\n",
+  "timestamp": "2025-08-09T06:22:31.784123",
+  "payload_id": "scafad_l0_0004"
+}

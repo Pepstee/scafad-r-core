@@ -1,0 +1,79 @@
+{
+  "execution_summary": {
+    "total_invocations": 5,
+    "successful": 0,
+    "failed": 5,
+    "total_duration": 48.37737703323364,
+    "success_rate": 0.0
+  },
+  "configuration": {
+    "mode": "test",
+    "adversarial_enabled": false,
+    "economic_enabled": false,
+    "seed": 42,
+    "function_name": "scafad-test-stack-HelloWorldFunction-k79tX3iBcK74",
+    "batch_size": 5
+  },
+  "scafad_analytics": {
+    "anomaly_detection_rate": 0,
+    "avg_processing_time": 0,
+    "high_risk_count": 0,
+    "economic_risk_distribution": {
+      "low": 0,
+      "medium": 0,
+      "high": 0
+    }
+  },
+  "detailed_results": [
+    {
+      "invocation_index": 0,
+      "success": false,
+      "duration": 25.623903274536133,
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "scafad-test-stack-HelloWorldFunction-k79tX3iBcK74 not found. Possible options in your template: ['HelloWorldFunction']\nError: Function scafad-test-stack-HelloWorldFunction-k79tX3iBcK74 not found in template\n",
+      "timestamp": "2025-08-09T06:22:09.046574",
+      "payload_id": "scafad_l0_0000"
+    },
+    {
+      "invocation_index": 1,
+      "success": false,
+      "duration": 5.353404998779297,
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "scafad-test-stack-HelloWorldFunction-k79tX3iBcK74 not found. Possible options in your template: ['HelloWorldFunction']\nError: Function scafad-test-stack-HelloWorldFunction-k79tX3iBcK74 not found in template\n",
+      "timestamp": "2025-08-09T06:22:14.654197",
+      "payload_id": "scafad_l0_0001"
+    },
+    {
+      "invocation_index": 2,
+      "success": false,
+      "duration": 5.007611513137817,
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "scafad-test-stack-HelloWorldFunction-k79tX3iBcK74 not found. Possible options in your template: ['HelloWorldFunction']\nError: Function scafad-test-stack-HelloWorldFunction-k79tX3iBcK74 not found in template\n",
+      "timestamp": "2025-08-09T06:22:19.918546",
+      "payload_id": "scafad_l0_0002"
+    },
+    {
+      "invocation_index": 3,
+      "success": false,
+      "duration": 5.719112157821655,
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "scafad-test-stack-HelloWorldFunction-k79tX3iBcK74 not found. Possible options in your template: ['HelloWorldFunction']\nError: Function scafad-test-stack-HelloWorldFunction-k79tX3iBcK74 not found in template\n",
+      "timestamp": "2025-08-09T06:22:25.894204",
+      "payload_id": "scafad_l0_0003"
+    },
+    {
+      "invocation_index": 4,
+      "success": false,
+      "duration": 5.629481792449951,
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "scafad-test-stack-HelloWorldFunction-k79tX3iBcK74 not found. Possible options in your template: ['HelloWorldFunction']\nError: Function scafad-test-stack-HelloWorldFunction-k79tX3iBcK74 not found in template\n",
+      "timestamp": "2025-08-09T06:22:31.784123",
+      "payload_id": "scafad_l0_0004"
+    }
+  ]
+}

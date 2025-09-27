@@ -1,0 +1,342 @@
+[
+  {
+    "validation_id": "validation_normal_execution_001_1755003043",
+    "start_time": 1755003043.0442896,
+    "end_time": 1755003043.1310706,
+    "total_processing_time_ms": 86.78102493286133,
+    "ready_for_layer1": true,
+    "pipeline_steps": [
+      {
+        "step_name": "Signal Negotiation",
+        "success": true,
+        "processing_time_ms": 8.844137191772461,
+        "metadata": {
+          "channels_negotiated": 3,
+          "primary_channel": "cloudwatch",
+          "fallback_channels": [
+            "xray",
+            "sqs"
+          ]
+        }
+      },
+      {
+        "step_name": "Redundancy Management",
+        "success": true,
+        "processing_time_ms": 15.437602996826172,
+        "metadata": {
+          "redundancy_mode": "dual",
+          "channels_used": 2
+        }
+      },
+      {
+        "step_name": "Sampling Strategy",
+        "success": true,
+        "processing_time_ms": 14.953374862670898,
+        "metadata": {
+          "sampling_strategy": "adaptive",
+          "sampling_rate": 0.85
+        }
+      },
+      {
+        "step_name": "Fallback Orchestration",
+        "success": true,
+        "processing_time_ms": 15.870332717895508,
+        "metadata": {
+          "fallback_mode": "none",
+          "fallback_reason": "all_channels_healthy"
+        }
+      },
+      {
+        "step_name": "Anomaly Detection",
+        "success": true,
+        "processing_time_ms": 15.735149383544922,
+        "metadata": {
+          "anomaly_detected": false,
+          "anomaly_type": "benign",
+          "confidence_score": 0.95
+        }
+      },
+      {
+        "step_name": "Runtime Control",
+        "success": true,
+        "processing_time_ms": 15.16866683959961,
+        "metadata": {
+          "control_state": "normal",
+          "adaptation_triggered": false
+        }
+      }
+    ]
+  },
+  {
+    "validation_id": "validation_cold_start_anomaly_001_1755003043",
+    "start_time": 1755003043.2409906,
+    "end_time": 1755003043.3337188,
+    "total_processing_time_ms": 92.7281379699707,
+    "ready_for_layer1": true,
+    "pipeline_steps": [
+      {
+        "step_name": "Signal Negotiation",
+        "success": true,
+        "processing_time_ms": 14.365434646606445,
+        "metadata": {
+          "channels_negotiated": 3,
+          "primary_channel": "cloudwatch",
+          "fallback_channels": [
+            "xray",
+            "sqs"
+          ]
+        }
+      },
+      {
+        "step_name": "Redundancy Management",
+        "success": true,
+        "processing_time_ms": 15.00248908996582,
+        "metadata": {
+          "redundancy_mode": "dual",
+          "channels_used": 2
+        }
+      },
+      {
+        "step_name": "Sampling Strategy",
+        "success": true,
+        "processing_time_ms": 15.128612518310547,
+        "metadata": {
+          "sampling_strategy": "adaptive",
+          "sampling_rate": 0.85
+        }
+      },
+      {
+        "step_name": "Fallback Orchestration",
+        "success": true,
+        "processing_time_ms": 15.861988067626953,
+        "metadata": {
+          "fallback_mode": "none",
+          "fallback_reason": "all_channels_healthy"
+        }
+      },
+      {
+        "step_name": "Anomaly Detection",
+        "success": true,
+        "processing_time_ms": 15.164852142333984,
+        "metadata": {
+          "anomaly_detected": true,
+          "anomaly_type": "cold_start",
+          "confidence_score": 0.87
+        }
+      },
+      {
+        "step_name": "Runtime Control",
+        "success": true,
+        "processing_time_ms": 15.169620513916016,
+        "metadata": {
+          "control_state": "normal",
+          "adaptation_triggered": false
+        }
+      }
+    ]
+  },
+  {
+    "validation_id": "validation_memory_leak_anomaly_001_1755003043",
+    "start_time": 1755003043.441658,
+    "end_time": 1755003043.5360382,
+    "total_processing_time_ms": 94.38014030456543,
+    "ready_for_layer1": true,
+    "pipeline_steps": [
+      {
+        "step_name": "Signal Negotiation",
+        "success": true,
+        "processing_time_ms": 14.423131942749023,
+        "metadata": {
+          "channels_negotiated": 3,
+          "primary_channel": "cloudwatch",
+          "fallback_channels": [
+            "xray",
+            "sqs"
+          ]
+        }
+      },
+      {
+        "step_name": "Redundancy Management",
+        "success": true,
+        "processing_time_ms": 16.175508499145508,
+        "metadata": {
+          "redundancy_mode": "dual",
+          "channels_used": 2
+        }
+      },
+      {
+        "step_name": "Sampling Strategy",
+        "success": true,
+        "processing_time_ms": 15.29383659362793,
+        "metadata": {
+          "sampling_strategy": "adaptive",
+          "sampling_rate": 0.85
+        }
+      },
+      {
+        "step_name": "Fallback Orchestration",
+        "success": true,
+        "processing_time_ms": 15.643596649169922,
+        "metadata": {
+          "fallback_mode": "none",
+          "fallback_reason": "all_channels_healthy"
+        }
+      },
+      {
+        "step_name": "Anomaly Detection",
+        "success": true,
+        "processing_time_ms": 15.552043914794922,
+        "metadata": {
+          "anomaly_detected": true,
+          "anomaly_type": "memory_leak",
+          "confidence_score": 0.87
+        }
+      },
+      {
+        "step_name": "Runtime Control",
+        "success": true,
+        "processing_time_ms": 15.501260757446289,
+        "metadata": {
+          "control_state": "normal",
+          "adaptation_triggered": false
+        }
+      }
+    ]
+  },
+  {
+    "validation_id": "validation_cpu_burst_anomaly_001_1755003043",
+    "start_time": 1755003043.6440053,
+    "end_time": 1755003043.7372556,
+    "total_processing_time_ms": 93.25027465820312,
+    "ready_for_layer1": true,
+    "pipeline_steps": [
+      {
+        "step_name": "Signal Negotiation",
+        "success": true,
+        "processing_time_ms": 12.475967407226562,
+        "metadata": {
+          "channels_negotiated": 3,
+          "primary_channel": "cloudwatch",
+          "fallback_channels": [
+            "xray",
+            "sqs"
+          ]
+        }
+      },
+      {
+        "step_name": "Redundancy Management",
+        "success": true,
+        "processing_time_ms": 15.770196914672852,
+        "metadata": {
+          "redundancy_mode": "dual",
+          "channels_used": 2
+        }
+      },
+      {
+        "step_name": "Sampling Strategy",
+        "success": true,
+        "processing_time_ms": 15.62190055847168,
+        "metadata": {
+          "sampling_strategy": "adaptive",
+          "sampling_rate": 0.85
+        }
+      },
+      {
+        "step_name": "Fallback Orchestration",
+        "success": true,
+        "processing_time_ms": 15.178680419921875,
+        "metadata": {
+          "fallback_mode": "none",
+          "fallback_reason": "all_channels_healthy"
+        }
+      },
+      {
+        "step_name": "Anomaly Detection",
+        "success": true,
+        "processing_time_ms": 15.22970199584961,
+        "metadata": {
+          "anomaly_detected": true,
+          "anomaly_type": "cpu_burst",
+          "confidence_score": 0.87
+        }
+      },
+      {
+        "step_name": "Runtime Control",
+        "success": true,
+        "processing_time_ms": 16.21556282043457,
+        "metadata": {
+          "control_state": "normal",
+          "adaptation_triggered": false
+        }
+      }
+    ]
+  },
+  {
+    "validation_id": "validation_economic_abuse_anomaly_001_1755003043",
+    "start_time": 1755003043.8447278,
+    "end_time": 1755003043.9368255,
+    "total_processing_time_ms": 92.09775924682617,
+    "ready_for_layer1": true,
+    "pipeline_steps": [
+      {
+        "step_name": "Signal Negotiation",
+        "success": true,
+        "processing_time_ms": 14.062166213989258,
+        "metadata": {
+          "channels_negotiated": 3,
+          "primary_channel": "cloudwatch",
+          "fallback_channels": [
+            "xray",
+            "sqs"
+          ]
+        }
+      },
+      {
+        "step_name": "Redundancy Management",
+        "success": true,
+        "processing_time_ms": 15.277862548828125,
+        "metadata": {
+          "redundancy_mode": "dual",
+          "channels_used": 2
+        }
+      },
+      {
+        "step_name": "Sampling Strategy",
+        "success": true,
+        "processing_time_ms": 15.752077102661133,
+        "metadata": {
+          "sampling_strategy": "adaptive",
+          "sampling_rate": 0.85
+        }
+      },
+      {
+        "step_name": "Fallback Orchestration",
+        "success": true,
+        "processing_time_ms": 15.794515609741211,
+        "metadata": {
+          "fallback_mode": "none",
+          "fallback_reason": "all_channels_healthy"
+        }
+      },
+      {
+        "step_name": "Anomaly Detection",
+        "success": true,
+        "processing_time_ms": 15.536069869995117,
+        "metadata": {
+          "anomaly_detected": true,
+          "anomaly_type": "economic_abuse",
+          "confidence_score": 0.87
+        }
+      },
+      {
+        "step_name": "Runtime Control",
+        "success": true,
+        "processing_time_ms": 15.00844955444336,
+        "metadata": {
+          "control_state": "normal",
+          "adaptation_triggered": false
+        }
+      }
+    ]
+  }
+]

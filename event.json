@@ -1,0 +1,34 @@
+{
+  "version": "2.0",
+  "routeKey": "POST /scafad",
+  "rawPath": "/scafad",
+  "rawQueryString": "",
+  "headers": {
+    "accept": "application/json",
+    "content-length": "500",
+    "content-type": "application/json",
+    "host": "api.example.com",
+    "user-agent": "SCAFAD-Client/1.0",
+    "x-forwarded-for": "203.0.113.1",
+    "x-forwarded-port": "443",
+    "x-forwarded-proto": "https"
+  },
+  "requestContext": {
+    "accountId": "123456789012",
+    "apiId": "api123456789",
+    "domainName": "api.example.com",
+    "http": {
+      "method": "POST",
+      "path": "/scafad",
+      "protocol": "HTTP/1.1",
+      "sourceIp": "203.0.113.1"
+    },
+    "requestId": "request123456789",
+    "routeKey": "POST /scafad",
+    "stage": "dev",
+    "time": "01/Jan/2025:00:00:00 +0000",
+    "timeEpoch": 1640995200000
+  },
+  "body": "{\"function_id\": \"user-serverless-function\", \"execution_phase\": \"invoke\", \"anomaly_type\": \"cpu_spike\", \"duration\": 2500.0, \"memory_spike_kb\": 15000, \"cpu_utilization\": 95.0, \"custom_fields\": {\"region\": \"us-east-1\", \"version\": \"1.2.3\", \"environment\": \"production\"}}",
+  "isBase64Encoded": false
+}

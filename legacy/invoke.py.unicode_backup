@@ -1,0 +1,906 @@
+#!/usr/bin/env python3
+"""
+SCAFAD Layer 0 Enhanced Invocation Script
+Complete implementation with all anomaly types, adversarial scenarios, and economic attacks
+Version: v4.2-complete
+"""
+
+import json
+import random
+import subprocess
+import time
+import string
+import os
+import argparse
+from datetime import datetime
+from typing import Dict, List, Any
+import uuid
+import hashlib
+
+# Enhanced argument parsing
+parser = argparse.ArgumentParser(
+    description="Invoke SCAFAD Layer 0 Lambda with comprehensive test payloads",
+    epilog="Example: python invoke.py --n 10 --seed 42 --mode test --adversarial"
+)
+parser.add_argument("--n", type=int, default=10, help="Number of invocations to simulate (default: 10)")
+parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility (default: 42)")
+parser.add_argument("--mode", choices=['test', 'production', 'demo'], default='test', 
+                   help="Invocation mode (default: test)")
+parser.add_argument("--adversarial", action='store_true', 
+                   help="Enable adversarial attack simulation")
+parser.add_argument("--economic", action='store_true', 
+                   help="Include economic abuse scenarios")
+parser.add_argument("--verbose", "-v", action='store_true', 
+                   help="Verbose output")
+parser.add_argument("--output-dir", default="telemetry", 
+                   help="Output directory for payloads (default: telemetry)")
+parser.add_argument("--function-name", default="HelloWorldFunction", 
+                   help="Lambda function name (default: HelloWorldFunction)")
+parser.add_argument("--delay", type=float, default=0.5, 
+                   help="Delay between invocations in seconds (default: 0.5)")
+parser.add_argument("--batch-size", type=int, default=0, 
+                   help="Process in batches (0 = no batching)")
+
+args = parser.parse_args()
+
+# Configuration
+N = args.n
+SEED = args.seed
+MODE = args.mode
+ENABLE_ADVERSARIAL = args.adversarial
+ENABLE_ECONOMIC = args.economic
+VERBOSE = args.verbose
+OUTPUT_DIR = args.output_dir
+FUNCTION_NAME = args.function_name
+DELAY = args.delay
+BATCH_SIZE = max(1, args.batch_size) if args.batch_size > 0 else N
+
+# Set random seed for reproducibility
+random.seed(SEED)
+
+# Complete SCAFAD Layer 0 Anomaly Types (All supported)
+ANOMALY_TYPES = [
+    "benign", "cold_start", "cpu_burst", "memory_spike", 
+    "io_intensive", "network_anomaly", "starvation_fallback", 
+    "timeout_fallback", "execution_failure", "adversarial_injection"
+]
+
+# Execution phases
+EXECUTION_PHASES = ["init", "invoke", "shutdown"]
+
+# Function profiles for comprehensive testing
+FUNCTION_PROFILES = [
+    "ml_inference", "data_processor", "api_gateway", 
+    "auth_service", "file_processor", "notification_service",
+    "analytics_engine", "cache_manager", "image_resizer",
+    "log_aggregator", "stream_processor", "batch_worker"
+]
+
+# Complete adversarial attack vectors
+ADVERSARIAL_ATTACKS = [
+    "adaptive", "dos_amplification", "billing_attack", 
+    "cryptomining", "resource_exhaustion", "cold_start_exploitation",
+    "memory_bomb", "cpu_exhaustion", "network_flooding",
+    "timing_attack", "side_channel", "privilege_escalation"
+]
+
+# Economic abuse scenarios
+ECONOMIC_ATTACKS = [
+    "billing_amplification", "resource_waste", "concurrent_abuse",
+    "memory_bomb", "timeout_exploitation", "init_spam",
+    "cold_start_farming", "duration_maximization", "invocation_flooding"
+]
+
+# Starvation simulation patterns
+STARVATION_PATTERNS = [
+    "resource_contention", "memory_pressure", "cpu_starvation",
+    "io_bottleneck", "network_congestion", "dependency_failure"
+]
+
+# Graph analysis payload types
+GRAPH_PAYLOAD_TYPES = [
+    "simple_node", "complex_chain", "star_topology", 
+    "mesh_pattern", "hierarchical", "circular_dependency"
+]
+
+def create_output_directories():
+    """Create comprehensive output directory structure"""
+    directories = [
+        OUTPUT_DIR,
+        f"{OUTPUT_DIR}/payloads",
+        f"{OUTPUT_DIR}/responses",
+        f"{OUTPUT_DIR}/logs",
+        f"{OUTPUT_DIR}/analysis",
+        f"{OUTPUT_DIR}/graphs",
+        f"{OUTPUT_DIR}/adversarial",
+        f"{OUTPUT_DIR}/economic"
+    ]
+    
+    for directory in directories:
+        os.makedirs(directory, exist_ok=True)
+    
+    print(f"📁 Created output directories in: {OUTPUT_DIR}")
+
+def generate_realistic_payload_data(profile: str, anomaly: str) -> Dict:
+    """Generate realistic payload data based on function profile and anomaly"""
+    
+    base_payloads = {
+        "ml_inference": {
+            "model_name": f"model_{random.choice(['sentiment', 'classification', 'regression', 'nlp', 'vision'])}",
+            "input_data": {
+                "features": [random.uniform(0, 1) for _ in range(random.randint(10, 100))],
+                "metadata": {"version": "v1.2", "timestamp": time.time()},
+                "batch_size": random.randint(1, 32)
+            },
+            "inference_config": {
+                "batch_inference": random.choice([True, False]),
+                "confidence_threshold": random.uniform(0.7, 0.95),
+                "max_tokens": random.randint(100, 2048)
+            }
+        },
+        
+        "data_processor": {
+            "Records": [
+                {
+                    "eventSource": "aws:s3",
+                    "s3": {
+                        "bucket": {"name": f"data-lake-bucket-{random.randint(1, 100)}"},
+                        "object": {"key": f"data/input_{random.randint(1000, 9999)}.{random.choice(['json', 'csv', 'parquet'])}"}
+                    }
+                } for _ in range(random.randint(1, 10))
+            ],
+            "processing_config": {
+                "batch_size": random.randint(100, 5000),
+                "format": random.choice(["json", "csv", "parquet", "avro"]),
+                "compression": random.choice(["gzip", "snappy", "none"]),
+                "parallel_workers": random.randint(1, 8)
+            }
+        },
+        
+        "api_gateway": {
+            "httpMethod": random.choice(["GET", "POST", "PUT", "DELETE", "PATCH"]),
+            "path": f"/api/v{random.randint(1,3)}/{random.choice(['users', 'orders', 'products', 'analytics', 'admin'])}",
+            "headers": {
+                "Content-Type": random.choice(["application/json", "application/xml", "text/plain"]),
+                "Authorization": f"Bearer {uuid.uuid4()}",
+                "User-Agent": f"SCAFAD-Test-Client/{random.uniform(1.0, 2.0):.1f}",
+                "X-API-Key": hashlib.md5(str(random.randint(1000, 9999)).encode()).hexdigest()
+            },
+            "queryStringParameters": {
+                "limit": str(random.randint(10, 1000)),
+                "offset": str(random.randint(0, 10000)),
+                "sort": random.choice(["asc", "desc"]),
+                "filter": random.choice(["active", "inactive", "all"])
+            },
+            "body": json.dumps({
+                "action": random.choice(["create", "update", "delete", "query", "bulk_operation"]),
+                "data": {"id": random.randint(1, 100000), "timestamp": time.time()}
+            })
+        },
+        
+        "auth_service": {
+            "authentication_request": {
+                "username": f"user_{random.randint(1000, 9999)}",
+                "auth_method": random.choice(["password", "oauth", "saml", "jwt", "api_key"]),
+                "client_id": str(uuid.uuid4()),
+                "scopes": random.sample(["read", "write", "admin", "delete", "execute"], random.randint(1, 3))
+            },
+            "session_config": {
+                "timeout": random.randint(300, 3600),
+                "multi_factor": random.choice([True, False]),
+                "encryption_level": random.choice(["standard", "high", "maximum"])
+            }
+        },
+        
+        "analytics_engine": {
+            "query_config": {
+                "query_type": random.choice(["aggregation", "time_series", "real_time", "batch"]),
+                "data_source": f"source_{random.randint(1, 20)}",
+                "time_range": {
+                    "start": time.time() - random.randint(3600, 86400),
+                    "end": time.time()
+                },
+                "metrics": random.sample(["count", "sum", "avg", "max", "min", "percentile"], random.randint(2, 4))
+            },
+            "processing_options": {
+                "cache_results": random.choice([True, False]),
+                "parallel_execution": random.choice([True, False]),
+                "result_format": random.choice(["json", "csv", "parquet"])
+            }
+        }
+    }
+    
+    # Get base payload or create a generic one
+    payload = base_payloads.get(profile, {
+        "generic_data": {"type": profile, "data": f"test_data_{random.randint(1, 10000)}"},
+        "metadata": {"generated": True, "profile": profile}
+    })
+    
+    # Add anomaly-specific modifications
+    anomaly_modifications = {
+        "memory_spike": {
+            "large_data": "x" * random.randint(10000, 100000),
+            "memory_target_mb": random.randint(100, 2048),
+            "allocation_pattern": random.choice(["gradual", "burst", "sustained"])
+        },
+        "cpu_burst": {
+            "computational_task": {
+                "iterations": random.randint(100000, 1000000),
+                "complexity": random.choice(["low", "medium", "high", "extreme"]),
+                "algorithm": random.choice(["sorting", "hashing", "encryption", "compression"])
+            }
+        },
+        "io_intensive": {
+            "io_operations": [
+                {"type": random.choice(["read", "write"]), "size": random.randint(1024, 1048576)} 
+                for _ in range(random.randint(10, 100))
+            ],
+            "io_pattern": random.choice(["sequential", "random", "mixed"])
+        },
+        "network_anomaly": {
+            "network_calls": [
+                {
+                    "url": f"https://api{i}.example.com/endpoint", 
+                    "timeout": random.randint(1, 30),
+                    "retries": random.randint(0, 5)
+                }
+                for i in range(random.randint(5, 50))
+            ],
+            "network_pattern": random.choice(["burst", "sustained", "intermittent"])
+        },
+        "starvation_fallback": {
+            "starvation_type": random.choice(STARVATION_PATTERNS),
+            "resource_limit": random.uniform(0.1, 0.5),
+            "fallback_strategy": random.choice(["graceful", "immediate", "delayed"])
+        },
+        "timeout_fallback": {
+            "timeout_duration": random.randint(1, 30),
+            "timeout_type": random.choice(["hard", "soft", "progressive"]),
+            "fallback_action": random.choice(["retry", "abort", "cache"])
+        },
+        "adversarial_injection": {
+            "injection_type": random.choice(["payload", "header", "parameter"]),
+            "attack_vector": random.choice(ADVERSARIAL_ATTACKS),
+            "evasion_technique": random.choice(["obfuscation", "encoding", "fragmentation"])
+        }
+    }
+    
+    if anomaly in anomaly_modifications:
+        payload.update(anomaly_modifications[anomaly])
+    
+    return payload
+
+def generate_graph_analysis_payload(index: int) -> Dict:
+    """Generate payload for graph analysis testing"""
+    graph_type = random.choice(GRAPH_PAYLOAD_TYPES)
+    
+    graph_configs = {
+        "simple_node": {
+            "node_count": 1,
+            "edge_count": 0,
+            "topology": "isolated"
+        },
+        "complex_chain": {
+            "node_count": random.randint(5, 20),
+            "edge_count": random.randint(4, 19),
+            "topology": "linear"
+        },
+        "star_topology": {
+            "node_count": random.randint(5, 15),
+            "edge_count": random.randint(4, 14),
+            "topology": "star",
+            "center_node": f"node_center_{index}"
+        },
+        "mesh_pattern": {
+            "node_count": random.randint(8, 12),
+            "edge_count": random.randint(15, 30),
+            "topology": "mesh",
+            "connectivity": random.uniform(0.3, 0.8)
+        }
+    }
+    
+    return {
+        "graph_analysis": True,
+        "graph_type": graph_type,
+        "graph_config": graph_configs.get(graph_type, graph_configs["simple_node"]),
+        "analysis_depth": random.randint(1, 5),
+        "enable_clustering": random.choice([True, False]),
+        "temporal_analysis": random.choice([True, False])
+    }
+
+def generate_enhanced_payload(index: int) -> Dict:
+    """Generate comprehensive enhanced payload for SCAFAD Layer 0"""
+    
+    # Basic payload structure
+    anomaly = random.choice(ANOMALY_TYPES)
+    profile = random.choice(FUNCTION_PROFILES)
+    phase = random.choice(EXECUTION_PHASES)
+    concurrency_id = ''.join(random.choices(string.ascii_uppercase, k=3))
+    
+    # Generate realistic payload data
+    payload_data = generate_realistic_payload_data(profile, anomaly)
+    
+    # Base SCAFAD payload
+    payload = {
+        # Core SCAFAD Layer 0 fields
+        "anomaly": anomaly,
+        "function_profile_id": profile,
+        "execution_phase": phase,
+        "concurrency_id": concurrency_id,
+        "invocation_timestamp": time.time(),
+        "test_mode": MODE == 'test',
+        
+        # Payload identification
+        "payload_id": f"scafad_l0_{index:04d}",
+        "batch_id": f"batch_{int(time.time())}_{random.randint(1000, 9999)}",
+        "seed": SEED,
+        "invocation_index": index,
+        
+        # Layer 0 Enhanced Features
+        "layer0_enhanced": True,
+        "schema_version": "v4.2",
+        "enable_graph_analysis": True,
+        "enable_provenance": True,
+        "enable_economic_monitoring": ENABLE_ECONOMIC,
+        "enable_adversarial_detection": ENABLE_ADVERSARIAL,
+        
+        # Realistic payload data
+        **payload_data,
+        
+        # Execution environment simulation
+        "execution_environment": {
+            "region": random.choice(["us-east-1", "us-west-2", "eu-west-1", "ap-southeast-1"]),
+            "availability_zone": random.choice(["a", "b", "c"]),
+            "runtime": random.choice(["python3.11", "python3.10", "python3.9"]),
+            "memory_allocation": random.choice([128, 256, 512, 1024, 2048, 3008]),
+            "architecture": random.choice(["x86_64", "arm64"])
+        },
+        
+        # Performance tracking
+        "performance_targets": {
+            "max_duration": random.uniform(1.0, 30.0),
+            "max_memory_mb": random.randint(64, 1024),
+            "expected_latency": random.uniform(0.1, 5.0)
+        },
+        
+        # Starvation simulation (10% chance)
+        "force_starvation": random.choice([True] + [False] * 9),
+        
+        # Provenance tracking
+        "provenance_chain": f"chain_{uuid.uuid4()}",
+        "parent_invocation": f"parent_{random.randint(1000, 9999)}" if random.random() < 0.2 else None,
+        
+        # Metadata
+        "metadata": {
+            "generator": "scafad_enhanced_invoke.py",
+            "generation_time": datetime.now().isoformat(),
+            "mode": MODE,
+            "total_invocations": N,
+            "invocation_index": index,
+            "anomaly_category": "synthetic" if anomaly != "benign" else "normal"
+        }
+    }
+    
+    # Add graph analysis payload (20% chance)
+    if random.random() < 0.2:
+        payload.update(generate_graph_analysis_payload(index))
+    
+    # Add adversarial configuration if enabled
+    if ENABLE_ADVERSARIAL and random.random() < 0.35:  # 35% chance
+        attack_type = random.choice(ADVERSARIAL_ATTACKS)
+        payload.update({
+            "enable_adversarial": True,
+            "attack_type": attack_type,
+            "adversarial_intensity": random.uniform(0.1, 1.0),
+            "adversarial_metadata": {
+                "target": profile,
+                "expected_impact": random.choice(["low", "medium", "high", "critical"]),
+                "evasion_strategy": random.choice(["gradual", "burst", "stealth", "persistent"]),
+                "attack_complexity": random.choice(["simple", "moderate", "complex", "sophisticated"]),
+                "detection_avoidance": random.choice([True, False])
+            },
+            "attack_payload": {
+                "injection_points": random.randint(1, 5),
+                "obfuscation_level": random.uniform(0.0, 1.0),
+                "polymorphic": random.choice([True, False])
+            }
+        })
+    
+    # Add economic attack patterns if enabled
+    if ENABLE_ECONOMIC and random.random() < 0.25:  # 25% chance
+        economic_attack = random.choice(ECONOMIC_ATTACKS)
+        payload.update({
+            "economic_attack": economic_attack,
+            "cost_impact_target": random.uniform(1.5, 25.0),  # 1.5x to 25x cost impact
+            "billing_abuse_type": random.choice(["duration", "memory", "invocation_count", "data_transfer"]),
+            "economic_metadata": {
+                "attack_duration": random.randint(60, 3600),  # 1 minute to 1 hour
+                "resource_amplification": random.uniform(2.0, 10.0),
+                "cost_optimization_bypass": random.choice([True, False]),
+                "billing_cycle_exploitation": random.choice([True, False])
+            }
+        })
+    
+    # Add cold start simulation (15% chance)
+    if random.random() < 0.15:
+        payload.update({
+            "simulate_cold_start": True,
+            "cold_start_config": {
+                "init_duration": random.uniform(0.5, 10.0),
+                "dependency_loading": random.choice([True, False]),
+                "package_size_mb": random.randint(10, 250)
+            }
+        })
+    
+    # Add timeout scenarios (10% chance)
+    if random.random() < 0.1:
+        payload.update({
+            "timeout_scenario": True,
+            "timeout_config": {
+                "timeout_after": random.uniform(5.0, 30.0),
+                "timeout_type": random.choice(["hard", "soft", "cascading"]),
+                "recovery_strategy": random.choice(["retry", "fallback", "abort"])
+            }
+        })
+    
+    return payload
+
+def save_payload(payload: Dict, index: int) -> str:
+    """Save payload to file with enhanced categorization"""
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    anomaly = payload.get("anomaly", "unknown")
+    
+    # Categorize payload for better organization
+    category = "adversarial" if payload.get("enable_adversarial") else \
+               "economic" if payload.get("economic_attack") else \
+               "normal"
+    
+    filename = f"{OUTPUT_DIR}/payloads/payload_{index:04d}_{anomaly}_{category}_{timestamp}.json"
+    
+    with open(filename, "w", encoding='utf-8') as f:
+        json.dump(payload, f, indent=2, ensure_ascii=False)
+    
+    return filename
+
+def invoke_lambda_function(payload: Dict, index: int) -> Dict:
+    """Invoke the Lambda function with enhanced error handling"""
+    
+    # Save payload to shared file for SAM
+    with open("payload.json", "w", encoding='utf-8') as f:
+        json.dump(payload, f, indent=2, ensure_ascii=False)
+    
+    start_time = time.time()
+    
+    try:
+        # Try to use SAM wrapper first, then fallback to direct SAM call
+        try:
+            from sam_wrapper import invoke_function
+            if VERBOSE:
+                print(f"   🔧 Using SAM wrapper")
+            result = invoke_function(FUNCTION_NAME, "payload.json", 
+                                   capture_output=True, text=True, timeout=120)
+        except ImportError:
+            # Fallback to direct SAM call
+            cmd = ["sam", "local", "invoke", FUNCTION_NAME, "--event", "payload.json"]
+            
+            if VERBOSE:
+                print(f"   🚀 Executing: {' '.join(cmd)}")
+            
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=120  # 2 minute timeout
+            )
+        
+        end_time = time.time()
+        duration = end_time - start_time
+        
+        # Parse response with enhanced error handling
+        response = {
+            "invocation_index": index,
+            "success": result.returncode == 0,
+            "duration": duration,
+            "returncode": result.returncode,
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+            "timestamp": datetime.now().isoformat(),
+            "payload_id": payload.get("payload_id", f"unknown_{index}")
+        }
+        
+        # Enhanced JSON response extraction
+        try:
+            stdout_lines = result.stdout.split('\n')
+            json_response = None
+            
+            for line in stdout_lines:
+                line = line.strip()
+                if line.startswith('{') and line.endswith('}'):
+                    try:
+                        json_response = json.loads(line)
+                        break
+                    except json.JSONDecodeError:
+                        continue
+            
+            if json_response:
+                response["lambda_response"] = json_response
+                
+                # Extract SCAFAD-specific metrics if available
+                if isinstance(json_response.get("body"), str):
+                    try:
+                        body = json.loads(json_response["body"])
+                        response["scafad_metrics"] = {
+                            "anomaly_detected": body.get("anomaly_detected"),
+                            "telemetry_id": body.get("telemetry_id"),
+                            "processing_time_ms": body.get("processing_time_ms"),
+                            "economic_risk_score": body.get("economic_risk_score"),
+                            "completeness_score": body.get("completeness_score")
+                        }
+                    except (json.JSONDecodeError, TypeError):
+                        pass
+        except Exception as e:
+            if VERBOSE:
+                print(f"   ⚠️  Error parsing Lambda response: {e}")
+        
+        return response
+        
+    except subprocess.TimeoutExpired:
+        return {
+            "invocation_index": index,
+            "success": False,
+            "duration": 120,
+            "error": "Timeout",
+            "error_type": "timeout",
+            "timestamp": datetime.now().isoformat(),
+            "payload_id": payload.get("payload_id", f"timeout_{index}")
+        }
+    
+    except Exception as e:
+        return {
+            "invocation_index": index,
+            "success": False,
+            "duration": time.time() - start_time,
+            "error": str(e),
+            "error_type": type(e).__name__,
+            "timestamp": datetime.now().isoformat(),
+            "payload_id": payload.get("payload_id", f"error_{index}")
+        }
+
+def save_response(response: Dict, index: int):
+    """Save invocation response with categorization"""
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    success = "success" if response.get("success") else "failure"
+    
+    filename = f"{OUTPUT_DIR}/responses/response_{index:04d}_{success}_{timestamp}.json"
+    
+    with open(filename, "w", encoding='utf-8') as f:
+        json.dump(response, f, indent=2, ensure_ascii=False)
+
+def update_master_log(payload: Dict, response: Dict):
+    """Update comprehensive master log"""
+    master_log_path = f"{OUTPUT_DIR}/invocation_master_log.jsonl"
+    
+    # Extract SCAFAD metrics from response
+    scafad_metrics = response.get("scafad_metrics", {})
+    
+    log_entry = {
+        "timestamp": datetime.now().isoformat(),
+        "payload_summary": {
+            "payload_id": payload.get("payload_id"),
+            "anomaly": payload.get("anomaly"),
+            "function_profile": payload.get("function_profile_id"),
+            "execution_phase": payload.get("execution_phase"),
+            "adversarial": payload.get("enable_adversarial", False),
+            "economic_attack": payload.get("economic_attack"),
+            "graph_analysis": payload.get("graph_analysis", False),
+            "starvation_forced": payload.get("force_starvation", False)
+        },
+        "response_summary": {
+            "success": response.get("success"),
+            "duration": response.get("duration"),
+            "status_code": response.get("lambda_response", {}).get("statusCode"),
+            "error_type": response.get("error_type"),
+            "timestamp": response.get("timestamp")
+        },
+        "scafad_analysis": {
+            "anomaly_detected": scafad_metrics.get("anomaly_detected"),
+            "processing_time_ms": scafad_metrics.get("processing_time_ms"),
+            "economic_risk_score": scafad_metrics.get("economic_risk_score"),
+            "completeness_score": scafad_metrics.get("completeness_score"),
+            "telemetry_id": scafad_metrics.get("telemetry_id")
+        },
+        "full_payload": payload,
+        "full_response": response
+    }
+    
+    with open(master_log_path, "a", encoding='utf-8') as f:
+        f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+
+def print_invocation_summary(payload: Dict, response: Dict, index: int):
+    """Print enhanced invocation summary with SCAFAD metrics"""
+    anomaly = payload.get("anomaly", "unknown")
+    profile = payload.get("function_profile_id", "unknown")
+    phase = payload.get("execution_phase", "unknown")
+    success = response.get("success", False)
+    duration = response.get("duration", 0)
+    
+    # Status and feature icons
+    status_icon = "✅" if success else "❌"
+    adversarial_icon = "🎭" if payload.get("enable_adversarial") else ""
+    economic_icon = "💰" if payload.get("economic_attack") else ""
+    graph_icon = "🕸️" if payload.get("graph_analysis") else ""
+    starvation_icon = "⚡" if payload.get("force_starvation") else ""
+    
+    print(f"{status_icon} [{index+1:3d}/{N}] {profile} | {anomaly} | {phase} | {duration:.2f}s {adversarial_icon}{economic_icon}{graph_icon}{starvation_icon}")
+    
+    if VERBOSE and response.get("lambda_response"):
+        lambda_resp = response["lambda_response"]
+        status_code = lambda_resp.get("statusCode", "unknown")
+        print(f"         └─ Lambda Status: {status_code}")
+        
+        # Enhanced SCAFAD metrics display
+        scafad_metrics = response.get("scafad_metrics", {})
+        if scafad_metrics:
+            anomaly_detected = scafad_metrics.get("anomaly_detected")
+            if anomaly_detected is not None:
+                detection_icon = "🚨" if anomaly_detected else "🟢"
+                print(f"         └─ Anomaly Detected: {detection_icon} {anomaly_detected}")
+            
+            processing_time = scafad_metrics.get("processing_time_ms")
+            if processing_time:
+                print(f"         └─ Processing Time: ⏱️ {processing_time:.2f}ms")
+            
+            risk_score = scafad_metrics.get("economic_risk_score")
+            if risk_score is not None:
+                risk_icon = "🔴" if risk_score > 0.7 else "🟡" if risk_score > 0.3 else "🟢"
+                print(f"         └─ Economic Risk: {risk_icon} {risk_score:.2f}")
+
+def print_execution_summary(start_time: float, responses: List[Dict]):
+    """Print comprehensive execution summary with SCAFAD analytics"""
+    end_time = time.time()
+    total_duration = end_time - start_time
+    
+    successful = sum(1 for r in responses if r.get("success", False))
+    failed = len(responses) - successful
+    
+    if responses:
+        avg_duration = sum(r.get("duration", 0) for r in responses) / len(responses)
+        min_duration = min(r.get("duration", 0) for r in responses)
+        max_duration = max(r.get("duration", 0) for r in responses)
+    else:
+        avg_duration = min_duration = max_duration = 0
+    
+    print(f"\n📊 Execution Summary")
+    print(f"{'='*60}")
+    print(f"🎯 Total Invocations: {N}")
+    print(f"✅ Successful: {successful}")
+    print(f"❌ Failed: {failed}")
+    print(f"📈 Success Rate: {successful/N*100:.1f}%")
+    print(f"⏱️  Total Time: {total_duration:.2f}s")
+    print(f"⚡ Avg Response Time: {avg_duration:.2f}s")
+    print(f"🏃 Min Response Time: {min_duration:.2f}s")
+    print(f"🐌 Max Response Time: {max_duration:.2f}s")
+    
+    # SCAFAD-specific analytics
+    anomaly_detections = 0
+    total_processing_time = 0
+    high_risk_count = 0
+    
+    for response in responses:
+        scafad_metrics = response.get("scafad_metrics", {})
+        if scafad_metrics.get("anomaly_detected"):
+            anomaly_detections += 1
+        if scafad_metrics.get("processing_time_ms"):
+            total_processing_time += scafad_metrics["processing_time_ms"]
+        if scafad_metrics.get("economic_risk_score", 0) > 0.7:
+            high_risk_count += 1
+    
+    if successful > 0:
+        print(f"\n🔍 SCAFAD Layer 0 Analytics:")
+        print(f"🚨 Anomalies Detected: {anomaly_detections}/{successful} ({anomaly_detections/successful*100:.1f}%)")
+        if total_processing_time > 0:
+            print(f"⚙️  Avg Processing Time: {total_processing_time/successful:.2f}ms")
+        print(f"🔴 High Risk Invocations: {high_risk_count}/{successful} ({high_risk_count/successful*100:.1f}%)")
+    
+    # Breakdown by category
+    categories = {"adversarial": 0, "economic": 0, "graph": 0, "starvation": 0, "normal": 0}
+    for i, response in enumerate(responses):
+        # This would need payload mapping - simplified for now
+        categories["normal"] += 1
+    
+    print(f"\n📁 Output Files:")
+    print(f"├── 📋 Payloads: {OUTPUT_DIR}/payloads/")
+    print(f"├── 📤 Responses: {OUTPUT_DIR}/responses/")
+    print(f"├── 📃 Master Log: {OUTPUT_DIR}/invocation_master_log.jsonl")
+    print(f"├── 📊 Analysis: {OUTPUT_DIR}/analysis/")
+    print(f"├── 🕸️  Graphs: {OUTPUT_DIR}/graphs/")
+    print(f"├── 🎭 Adversarial: {OUTPUT_DIR}/adversarial/")
+    print(f"└── 💰 Economic: {OUTPUT_DIR}/economic/")
+
+def process_batch(batch_payloads: List[Dict], batch_start_index: int) -> List[Dict]:
+    """Process a batch of payloads with enhanced monitoring"""
+    batch_number = batch_start_index // BATCH_SIZE + 1
+    print(f"\n🔄 Processing batch {batch_number} ({len(batch_payloads)} invocations)")
+    
+    responses = []
+    batch_start_time = time.time()
+    
+    for i, payload in enumerate(batch_payloads):
+        actual_index = batch_start_index + i
+        
+        # Save payload with enhanced categorization
+        save_payload(payload, actual_index)
+        
+        # Invoke function
+        response = invoke_lambda_function(payload, actual_index)
+        
+        # Save response with categorization
+        save_response(response, actual_index)
+        
+        # Update comprehensive logs
+        update_master_log(payload, response)
+        
+        # Print enhanced summary
+        print_invocation_summary(payload, response, actual_index)
+        
+        responses.append(response)
+        
+        # Adaptive delay based on response time
+        if i < len(batch_payloads) - 1:
+            adaptive_delay = DELAY
+            if response.get("duration", 0) > 5.0:  # If response took > 5s, reduce delay
+                adaptive_delay = max(0.1, DELAY * 0.5)
+            time.sleep(adaptive_delay)
+    
+    batch_duration = time.time() - batch_start_time
+    batch_success_rate = sum(1 for r in responses if r.get("success")) / len(responses) * 100
+    
+    print(f"   📊 Batch {batch_number} completed: {batch_success_rate:.1f}% success in {batch_duration:.2f}s")
+    
+    return responses
+
+def generate_final_report(all_responses: List[Dict], start_time: float):
+    """Generate comprehensive final report"""
+    report_data = {
+        "execution_summary": {
+            "total_invocations": N,
+            "successful": sum(1 for r in all_responses if r.get("success")),
+            "failed": sum(1 for r in all_responses if not r.get("success")),
+            "total_duration": time.time() - start_time,
+            "success_rate": sum(1 for r in all_responses if r.get("success")) / N if N > 0 else 0
+        },
+        "configuration": {
+            "mode": MODE,
+            "adversarial_enabled": ENABLE_ADVERSARIAL,
+            "economic_enabled": ENABLE_ECONOMIC,
+            "seed": SEED,
+            "function_name": FUNCTION_NAME,
+            "batch_size": BATCH_SIZE
+        },
+        "scafad_analytics": {
+            "anomaly_detection_rate": 0,
+            "avg_processing_time": 0,
+            "high_risk_count": 0,
+            "economic_risk_distribution": {"low": 0, "medium": 0, "high": 0}
+        },
+        "detailed_results": all_responses
+    }
+    
+    # Calculate SCAFAD-specific metrics
+    successful_responses = [r for r in all_responses if r.get("success")]
+    if successful_responses:
+        anomaly_count = sum(1 for r in successful_responses 
+                          if r.get("scafad_metrics", {}).get("anomaly_detected"))
+        report_data["scafad_analytics"]["anomaly_detection_rate"] = anomaly_count / len(successful_responses)
+        
+        processing_times = [r.get("scafad_metrics", {}).get("processing_time_ms", 0) 
+                          for r in successful_responses]
+        if processing_times:
+            report_data["scafad_analytics"]["avg_processing_time"] = sum(processing_times) / len(processing_times)
+    
+    # Save report
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    report_filename = f"{OUTPUT_DIR}/analysis/execution_report_{timestamp}.json"
+    
+    with open(report_filename, "w", encoding='utf-8') as f:
+        json.dump(report_data, f, indent=2, ensure_ascii=False)
+    
+    print(f"\n📋 Detailed report saved: {report_filename}")
+
+def main():
+    """Main execution function with comprehensive SCAFAD Layer 0 testing"""
+    print(f"🚀 SCAFAD Layer 0 Enhanced Invocation Script")
+    print(f"{'='*70}")
+    print(f"📊 Configuration:")
+    print(f"   • Invocations: {N}")
+    print(f"   • Mode: {MODE}")
+    print(f"   • Adversarial: {'✅' if ENABLE_ADVERSARIAL else '❌'}")
+    print(f"   • Economic Attacks: {'✅' if ENABLE_ECONOMIC else '❌'}")
+    print(f"   • Function: {FUNCTION_NAME}")
+    print(f"   • Delay: {DELAY}s")
+    print(f"   • Output: {OUTPUT_DIR}/")
+    print(f"   • Seed: {SEED}")
+    print(f"   • Batch Size: {BATCH_SIZE}")
+    
+    # Create comprehensive output directories
+    create_output_directories()
+    
+    # Generate all enhanced payloads
+    print(f"\n📦 Generating {N} enhanced SCAFAD payloads...")
+    payloads = []
+    
+    for i in range(N):
+        payload = generate_enhanced_payload(i)
+        payloads.append(payload)
+    
+    print(f"✅ Generated {len(payloads)} payloads")
+    
+    # Payload composition analysis
+    anomaly_counts = {}
+    for payload in payloads:
+        anomaly = payload.get("anomaly", "unknown")
+        anomaly_counts[anomaly] = anomaly_counts.get(anomaly, 0) + 1
+    
+    print(f"   📈 Anomaly Distribution:")
+    for anomaly, count in sorted(anomaly_counts.items()):
+        percentage = count / len(payloads) * 100
+        print(f"      • {anomaly}: {count} ({percentage:.1f}%)")
+    
+    if ENABLE_ADVERSARIAL:
+        adversarial_count = sum(1 for p in payloads if p.get("enable_adversarial"))
+        print(f"   🎭 Adversarial Payloads: {adversarial_count} ({adversarial_count/len(payloads)*100:.1f}%)")
+    
+    if ENABLE_ECONOMIC:
+        economic_count = sum(1 for p in payloads if p.get("economic_attack"))
+        print(f"   💰 Economic Attack Payloads: {economic_count} ({economic_count/len(payloads)*100:.1f}%)")
+    
+    # Execute invocations
+    start_time = time.time()
+    print(f"\n🚀 Starting SCAFAD Layer 0 invocations...")
+    
+    all_responses = []
+    
+    # Process in batches for better resource management
+    for batch_start in range(0, N, BATCH_SIZE):
+        batch_end = min(batch_start + BATCH_SIZE, N)
+        batch_payloads = payloads[batch_start:batch_end]
+        
+        batch_responses = process_batch(batch_payloads, batch_start)
+        all_responses.extend(batch_responses)
+        
+        # Pause between batches if not the last batch
+        if batch_end < N:
+            pause_duration = DELAY * 2
+            print(f"⏸️  Batch complete, pausing {pause_duration:.1f}s before next batch...")
+            time.sleep(pause_duration)
+    
+    # Print comprehensive final summary
+    print_execution_summary(start_time, all_responses)
+    
+    # Generate detailed report
+    generate_final_report(all_responses, start_time)
+    
+    print(f"\n🎉 All {N} SCAFAD Layer 0 invocations completed!")
+    print(f"💡 Next steps:")
+    print(f"   1. Check logs: python fetch_logs.py")
+    print(f"   2. Analyze results: {OUTPUT_DIR}/analysis/")
+    print(f"   3. Review master log: {OUTPUT_DIR}/invocation_master_log.jsonl")
+    print(f"   4. Examine adversarial results: {OUTPUT_DIR}/adversarial/")
+    print(f"   5. Review economic patterns: {OUTPUT_DIR}/economic/")
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        print(f"\n⚠️  SCAFAD invocation interrupted by user")
+        print(f"📁 Partial results may be available in: {OUTPUT_DIR}/")
+    except Exception as e:
+        print(f"\n❌ SCAFAD invocation failed: {e}")
+        import traceback
+        traceback.print_exc()
+        print(f"\n🔧 Troubleshooting:")
+        print(f"   1. Check SAM CLI installation: sam --version")
+        print(f"   2. Verify Docker is running: docker ps")
+        print(f"   3. Test manual invoke: sam local invoke {FUNCTION_NAME} --event event.json")
+        print(f"   4. Check function logs in CloudWatch")
+        exit(1)

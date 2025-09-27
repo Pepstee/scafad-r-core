@@ -1,0 +1,28 @@
+{
+  "invocation_index": 7,
+  "success": true,
+  "duration": 16.042673349380493,
+  "returncode": 0,
+  "stdout": "{\"statusCode\": 202, \"body\": \"{\\\"message\\\": \\\"SCAFAD Layer 0 - Enhanced telemetry processing complete\\\", \\\"telemetry_id\\\": \\\"11a87856-f34b-4a8d-8131-996dd7a4f1d4\\\", \\\"node_id\\\": \\\"11a87856-f34b-4a8d-8131-996dd7a4f1d4_1754699718682917788\\\", \\\"provenance_id\\\": \\\"79d7e916-3bf6-4faf-acb6-141c0198257b\\\", \\\"anomaly_detected\\\": true, \\\"economic_risk_score\\\": 0.3, \\\"processing_time_ms\\\": 3.1533241271972656, \\\"emission_success\\\": true, \\\"completeness_score\\\": 1.0, \\\"performance_summary\\\": {\\\"total_invocations\\\": 1, \\\"successful_emissions\\\": 1, \\\"fallback_activations\\\": 1, \\\"anomalies_detected\\\": 1, \\\"success_rate\\\": 1.0, \\\"fallback_rate\\\": 1.0, \\\"anomaly_rate\\\": 1.0, \\\"graph_metrics\\\": {\\\"node_count\\\": 1, \\\"edge_count\\\": 0, \\\"density\\\": 0, \\\"connected_components\\\": 1, \\\"average_clustering\\\": 0.0, \\\"temporal_span\\\": 0.0}}, \\\"request_id\\\": \\\"11a87856-f34b-4a8d-8131-996dd7a4f1d4\\\", \\\"function_name\\\": \\\"HelloWorldFunction\\\", \\\"execution_phase\\\": \\\"invoke\\\", \\\"anomaly\\\": \\\"io_intensive\\\", \\\"payload_id\\\": \\\"scafad_l0_0007\\\", \\\"schema_version\\\": \\\"v4.2\\\"}\", \"headers\": {\"Content-Type\": \"application/json\", \"X-SCAFAD-Version\": \"v4.2\", \"X-SCAFAD-Layer\": \"0\", \"X-Processing-Time\": \"3.1533241271972656\", \"X-Telemetry-Id\": \"11a87856-f34b-4a8d-8131-996dd7a4f1d4\"}}",
+  "stderr": "Invoking app.lambda_handler (python3.11)\nLocal image is up-to-date\nUsing local image: public.ecr.aws/lambda/python:3.11-rapid-x86_64.\n\nMounting C:\\Users\\Gutua\\OneDrive\\Documents\\scafad-lambda\\.aws-sam\\build\\HelloWorldFunction as /var/task:ro,delegated, inside runtime container\nSTART RequestId: 0244a140-a772-4a5e-8740-6171a5b92315 Version: $LATEST\nâœ… SCAFAD Layer 0 vv4.2 loaded successfully\nðŸ“Š 17 components available for import\nðŸ”§ Configuration: NORMAL verbosity\nðŸš€ Ready for serverless anomaly detection\n[SCAFAD_TRACE] ts=1754699718.683 func=HelloWorldFunction phase=ExecutionPhase.INVOKE anomaly=AnomalyType.MEMORY_SPIKE duration=0.147s memory=32440KB fallback=True\nEND RequestId: 11a87856-f34b-4a8d-8131-996dd7a4f1d4\nREPORT RequestId: 11a87856-f34b-4a8d-8131-996dd7a4f1d4\tInit Duration: 0.99 ms\tDuration: 5965.36 ms\tBilled Duration: 5966 ms\tMemory Size: 1024 MB\tMax Memory Used: 1024 MB\t\n\n",
+  "timestamp": "2025-08-09T01:35:20.401558",
+  "payload_id": "scafad_l0_0007",
+  "lambda_response": {
+    "statusCode": 202,
+    "body": "{\"message\": \"SCAFAD Layer 0 - Enhanced telemetry processing complete\", \"telemetry_id\": \"11a87856-f34b-4a8d-8131-996dd7a4f1d4\", \"node_id\": \"11a87856-f34b-4a8d-8131-996dd7a4f1d4_1754699718682917788\", \"provenance_id\": \"79d7e916-3bf6-4faf-acb6-141c0198257b\", \"anomaly_detected\": true, \"economic_risk_score\": 0.3, \"processing_time_ms\": 3.1533241271972656, \"emission_success\": true, \"completeness_score\": 1.0, \"performance_summary\": {\"total_invocations\": 1, \"successful_emissions\": 1, \"fallback_activations\": 1, \"anomalies_detected\": 1, \"success_rate\": 1.0, \"fallback_rate\": 1.0, \"anomaly_rate\": 1.0, \"graph_metrics\": {\"node_count\": 1, \"edge_count\": 0, \"density\": 0, \"connected_components\": 1, \"average_clustering\": 0.0, \"temporal_span\": 0.0}}, \"request_id\": \"11a87856-f34b-4a8d-8131-996dd7a4f1d4\", \"function_name\": \"HelloWorldFunction\", \"execution_phase\": \"invoke\", \"anomaly\": \"io_intensive\", \"payload_id\": \"scafad_l0_0007\", \"schema_version\": \"v4.2\"}",
+    "headers": {
+      "Content-Type": "application/json",
+      "X-SCAFAD-Version": "v4.2",
+      "X-SCAFAD-Layer": "0",
+      "X-Processing-Time": "3.1533241271972656",
+      "X-Telemetry-Id": "11a87856-f34b-4a8d-8131-996dd7a4f1d4"
+    }
+  },
+  "scafad_metrics": {
+    "anomaly_detected": true,
+    "telemetry_id": "11a87856-f34b-4a8d-8131-996dd7a4f1d4",
+    "processing_time_ms": 3.1533241271972656,
+    "economic_risk_score": 0.3,
+    "completeness_score": 1.0
+  }
+}

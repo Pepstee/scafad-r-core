@@ -1,0 +1,31 @@
+{
+  "invocation_index": 1,
+  "success": false,
+  "duration": 0.14744353294372559,
+  "returncode": 1,
+  "lambda_response": {
+    "statusCode": 202,
+    "body": "{\"message\": \"SCAFAD Layer 0 - Enhanced telemetry processing complete\", \"telemetry_id\": \"1fe9a653-2e3b-4872-8ec1-a7957fcf5abf\", \"node_id\": \"1fe9a653-2e3b-4872-8ec1-a7957fcf5abf_1754717221838897050\", \"provenance_id\": \"6348c764-59d0-4ee6-b853-7d256deea564\", \"anomaly_detected\": true, \"economic_risk_score\": 0.3, \"processing_time_ms\": 1.079559326171875, \"emission_success\": true, \"completeness_score\": 1.0, \"performance_summary\": {\"total_invocations\": 1, \"successful_emissions\": 1, \"fallback_activations\": 1, \"anomalies_detected\": 1, \"success_rate\": 1.0, \"fallback_rate\": 1.0, \"anomaly_rate\": 1.0, \"graph_metrics\": {\"node_count\": 1, \"edge_count\": 0, \"density\": 0, \"connected_components\": 1, \"average_clustering\": 0.0, \"temporal_span\": 0.0}}, \"request_id\": \"1fe9a653-2e3b-4872-8ec1-a7957fcf5abf\", \"function_name\": \"scafad-test-stack-HelloWorldFunction-k79tX3iBcK74\", \"execution_phase\": \"init\", \"anomaly\": \"cold_start\", \"payload_id\": \"scafad_l0_0001\", \"schema_version\": \"v4.2\"}",
+    "headers": {
+      "Content-Type": "application/json",
+      "X-SCAFAD-Version": "v4.2",
+      "X-SCAFAD-Layer": "0",
+      "X-Processing-Time": "1.079559326171875",
+      "X-Telemetry-Id": "1fe9a653-2e3b-4872-8ec1-a7957fcf5abf"
+    }
+  },
+  "aws_response_metadata": {
+    "status_code": 200,
+    "request_id": "1fe9a653-2e3b-4872-8ec1-a7957fcf5abf",
+    "function_error": null
+  },
+  "timestamp": "2025-08-09T06:27:02.121712",
+  "payload_id": "scafad_l0_0001",
+  "scafad_metrics": {
+    "anomaly_detected": true,
+    "telemetry_id": "1fe9a653-2e3b-4872-8ec1-a7957fcf5abf",
+    "processing_time_ms": 1.079559326171875,
+    "economic_risk_score": 0.3,
+    "completeness_score": 1.0
+  }
+}
