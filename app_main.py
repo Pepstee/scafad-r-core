@@ -42,7 +42,7 @@ import asyncio
 import time
 import json
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 from dataclasses import asdict
 
 # Import all specialized modules
@@ -97,7 +97,7 @@ class Layer0_AdaptiveTelemetryController:
         self.economic_detector = EconomicAbuseDetector(self.config)
         self.silent_failure_analyzer = SilentFailureAnalyzer(self.config)
         self.formal_verifier = FormalVerificationEngine(self.config)
-        self.schema_manager = SchemaEvolutionManager(self.config)
+        self.schema_manager = SchemaEvolutionManager(self.config.schema)
         
         # Initialize runtime control loop with all components
         self.runtime_control.initialize_components(

@@ -126,7 +126,7 @@ class TelemetryConfig:
         return issues
 
 
-@dataclass 
+@dataclass
 class GraphConfig:
     """Configuration for invocation graph analysis"""
     
@@ -175,6 +175,53 @@ class GraphConfig:
             issues.append(f"Unsupported clustering algorithm: {self.clustering_algorithm}")
             
         return issues
+
+
+@dataclass
+class SchemaConfig:
+    """Configuration for schema evolution and validation"""
+
+    enable_schema_evolution: bool = True
+    default_version: str = "v1"
+    max_version_history: int = 50
+    compatibility_policy: str = "BACKWARD"  # STRICT, BACKWARD, FORWARD, FLEXIBLE
+    validation_strictness: str = "STRICT"  # RELAXED, BALANCED, STRICT
+    allow_auto_migration: bool = True
+    validation_timeout_seconds: int = 5
+    schema_registry_path: Optional[Path] = None
+    custom_validators: Dict[str, Any] = field(default_factory=dict)
+
+    def validate(self) -> List[str]:
+        """Validate schema configuration"""
+        issues: List[str] = []
+
+        if self.max_version_history <= 0:
+            issues.append("Maximum version history must be positive")
+
+        if self.compatibility_policy not in {"STRICT", "BACKWARD", "FORWARD", "FLEXIBLE"}:
+            issues.append(f"Invalid compatibility policy: {self.compatibility_policy}")
+
+        if self.validation_strictness not in {"RELAXED", "BALANCED", "STRICT"}:
+            issues.append(f"Invalid validation strictness: {self.validation_strictness}")
+
+        if self.validation_timeout_seconds <= 0:
+            issues.append("Validation timeout must be positive")
+
+        return issues
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Dictionary representation used by schema management modules"""
+        return {
+            "enable_schema_evolution": self.enable_schema_evolution,
+            "default_version": self.default_version,
+            "max_version_history": self.max_version_history,
+            "compatibility_policy": self.compatibility_policy,
+            "validation_strictness": self.validation_strictness,
+            "allow_auto_migration": self.allow_auto_migration,
+            "validation_timeout_seconds": self.validation_timeout_seconds,
+            "schema_registry_path": str(self.schema_registry_path) if self.schema_registry_path else None,
+            "custom_validators": list(self.custom_validators.keys()),
+        }
 
 
 @dataclass
@@ -465,6 +512,31 @@ class Layer0Config:
     formal_verification: FormalVerificationConfig = field(default_factory=FormalVerificationConfig)
     provenance: ProvenanceConfig = field(default_factory=ProvenanceConfig)
     performance: PerformanceConfig = field(default_factory=PerformanceConfig)
+    schema: SchemaConfig = field(default_factory=SchemaConfig)
+    algorithm_weights: Dict[str, float] = field(default_factory=lambda: {
+        'statistical_outlier': 0.15,
+        'isolation_forest': 0.12,
+        'temporal_deviation': 0.10,
+        'resource_spike': 0.08,
+        'execution_pattern': 0.08,
+        'network_anomaly': 0.07,
+        'memory_leak': 0.06,
+        'cpu_burst': 0.06,
+        'io_intensive': 0.05,
+        'cold_start': 0.05,
+        'timeout_pattern': 0.04,
+        'frequency_anomaly': 0.04,
+        'duration_outlier': 0.03,
+        'correlation_break': 0.03,
+        'seasonal_deviation': 0.02,
+        'trend_change': 0.02
+    })
+    trust_weights: Dict[str, float] = field(default_factory=lambda: {
+        'high_confidence': 1.0,
+        'medium_confidence': 0.7,
+        'low_confidence': 0.4,
+        'untrusted': 0.1
+    })
     
     # Feature flags (for easy enable/disable of entire subsystems)
     enable_graph_analysis: bool = True
@@ -569,13 +641,114 @@ class Layer0Config:
         # Economic configuration
         if "SCAFAD_HOURLY_COST_LIMIT" in os.environ:
             self.economic.hourly_cost_limit_usd = float(os.environ["SCAFAD_HOURLY_COST_LIMIT"])
-        
+
         if "SCAFAD_DAILY_COST_LIMIT" in os.environ:
             self.economic.daily_cost_limit_usd = float(os.environ["SCAFAD_DAILY_COST_LIMIT"])
-        
+
         # Performance configuration
         if "SCAFAD_MAX_MEMORY" in os.environ:
             self.performance.max_memory_usage_mb = int(os.environ["SCAFAD_MAX_MEMORY"])
+
+        # Schema configuration
+        if "SCAFAD_SCHEMA_COMPATIBILITY" in os.environ:
+            self.schema.compatibility_policy = os.environ["SCAFAD_SCHEMA_COMPATIBILITY"].upper()
+
+        if "SCAFAD_SCHEMA_STRICTNESS" in os.environ:
+            self.schema.validation_strictness = os.environ["SCAFAD_SCHEMA_STRICTNESS"].upper()
+
+        if "SCAFAD_SCHEMA_AUTO_MIGRATION" in os.environ:
+            self.schema.allow_auto_migration = (
+                os.environ["SCAFAD_SCHEMA_AUTO_MIGRATION"].lower() == "true"
+            )
+
+        if "SCAFAD_SCHEMA_TIMEOUT" in os.environ:
+            self.schema.validation_timeout_seconds = int(os.environ["SCAFAD_SCHEMA_TIMEOUT"])
+
+    # ------------------------------------------------------------------
+    # Legacy attribute shims
+    # ------------------------------------------------------------------
+
+    @property
+    def clustering_eps(self) -> float:
+        """Expose graph clustering epsilon on the top-level config.
+
+        Several historical modules – including the fallback orchestrator and
+        contract validation suites – reach directly into ``Layer0Config`` for
+        clustering parameters.  The modern implementation scopes those values
+        under ``graph``; this property keeps the legacy surface available while
+        delegating to the canonical location.
+        """
+
+        return self.graph.clustering_eps
+
+    @clustering_eps.setter
+    def clustering_eps(self, value: float) -> None:
+        self.graph.clustering_eps = value
+
+    @property
+    def clustering_min_samples(self) -> int:
+        """Expose DBSCAN sample threshold on the top-level config."""
+
+        return self.graph.clustering_min_samples
+
+    @clustering_min_samples.setter
+    def clustering_min_samples(self, value: int) -> None:
+        self.graph.clustering_min_samples = value
+
+    def __getattr__(self, name: str) -> Any:
+        """Fallback to nested configurations for legacy attribute access."""
+
+        for component_name in (
+            "graph",
+            "telemetry",
+            "adversarial",
+            "economic",
+            "silent_failure",
+            "formal_verification",
+            "provenance",
+            "performance",
+            "schema",
+        ):
+            component = object.__getattribute__(self, component_name)
+            if hasattr(component, name):
+                return getattr(component, name)
+
+        raise AttributeError(f"{type(self).__name__!s} has no attribute {name!r}")
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        """Propagate legacy assignments into component configurations."""
+
+        descriptor = getattr(type(self), name, None)
+        if isinstance(descriptor, property) and descriptor.fset is not None:
+            descriptor.fset(self, value)
+            return
+
+        fields = getattr(type(self), "__dataclass_fields__", {})
+        if name in fields:
+            object.__setattr__(self, name, value)
+            return
+
+        for component_name in (
+            "graph",
+            "telemetry",
+            "adversarial",
+            "economic",
+            "silent_failure",
+            "formal_verification",
+            "provenance",
+            "performance",
+            "schema",
+        ):
+            try:
+                component = object.__getattribute__(self, component_name)
+            except AttributeError:
+                continue
+
+            if hasattr(component, name):
+                setattr(component, name, value)
+                return
+
+        object.__setattr__(self, name, value)
     
     def _apply_deployment_overrides(self):
         """Apply deployment-specific configuration overrides"""
@@ -630,7 +803,8 @@ class Layer0Config:
             ("silent_failure", self.silent_failure.validate),
             ("formal_verification", self.formal_verification.validate),
             ("provenance", self.provenance.validate),
-            ("performance", self.performance.validate)
+            ("performance", self.performance.validate),
+            ("schema", self.schema.validate)
         ]
         
         for component_name, validator in component_validators:
@@ -704,6 +878,13 @@ class Layer0Config:
                 "temporal_window_s": self.telemetry.temporal_window_seconds
             }
         }
+
+
+@dataclass
+class ScafadConfig(Layer0Config):
+    """Backward-compatible alias for the primary Layer 0 configuration."""
+
+    pass
 
 
 # =============================================================================

@@ -14,7 +14,7 @@ Academic References:
 
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Set, Tuple, Union, Callable
+from typing import Any, Dict, List, Optional, Set, Tuple, Union, Callable, TYPE_CHECKING
 import json
 import hashlib
 import time
@@ -25,6 +25,9 @@ from enum import Enum
 import copy
 
 from app_config import SchemaConfig
+
+if TYPE_CHECKING:
+    from app_config import Layer0Config
 from app_telemetry import TelemetryRecord
 
 logger = logging.getLogger(__name__)
@@ -796,14 +799,17 @@ class SchemaVersionController:
 
 class SchemaEvolutionManager:
     """Advanced schema evolution management system"""
-    
-    def __init__(self, config: SchemaConfig):
-        self.config = config
-        self.version_controller = SchemaVersionController(config)
-        self.validator = SchemaValidator(config)
+
+    def __init__(self, config: Union[SchemaConfig, "Layer0Config"]):
+        if isinstance(config, SchemaConfig):
+            self.config = config
+        else:
+            self.config = getattr(config, "schema", SchemaConfig())
+        self.version_controller = SchemaVersionController(self.config)
+        self.validator = SchemaValidator(self.config)
         self.evolution_history: deque = deque(maxlen=1000)
-        self.auto_evolution_enabled = getattr(config, 'auto_evolution', False)
-        self.compatibility_threshold = getattr(config, 'compatibility_threshold', 0.8)
+        self.auto_evolution_enabled = getattr(self.config, 'auto_evolution', False)
+        self.compatibility_threshold = getattr(self.config, 'compatibility_threshold', 0.8)
     
     async def validate_and_sanitize_input(self, event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         """Validate and sanitize input data against current schema"""

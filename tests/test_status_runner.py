@@ -1,22 +1,23 @@
-#!/usr/bin/env python3
-"""
-Test status runner - executes the test check
-"""
+"""Pytest wrapper around the quick status runner script."""
+from __future__ import annotations
+
+from pathlib import Path
 import sys
-import os
+from typing import Final
 
-# Add current directory to path
-sys.path.insert(0, '/workspace')
+ROOT: Final = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-# Import and run the test check
-try:
-    from run_quick_test_check import main
-    success = main()
-    print(f"\nTest check result: {'SUCCESS' if success else 'NEEDS WORK'}")
-except Exception as e:
-    print(f"Test runner error: {e}")
-    import traceback
-    traceback.print_exc()
-    success = False
+from .run_quick_test_check import main as run_quick_status  # noqa: E402
 
-sys.exit(0 if success else 1)
+
+def test_quick_status_runner_passes(capsys) -> None:
+    """Ensure the quick status runner reports success."""
+    success = run_quick_status()
+    captured = capsys.readouterr()
+    assert success, (
+        "Quick status runner reported failure.\n"
+        f"stdout:\n{captured.out}\n"
+        f"stderr:\n{captured.err}"
+    )

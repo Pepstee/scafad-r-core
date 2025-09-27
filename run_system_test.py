@@ -377,7 +377,7 @@ async def test_stream_processor():
         print(f"❌ Stream processor test failed: {e}")
         return {"success": False, "error": str(e)}
 
-def test_telemetry_channels():
+async def test_telemetry_channels():
     """Test multi-channel telemetry system"""
     print("\n📡 Testing Multi-Channel Telemetry...")
     

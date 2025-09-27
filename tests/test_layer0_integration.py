@@ -597,8 +597,16 @@ class FailureSimulator:
                 
                 # Check for failures to trigger
                 failures_to_trigger = [
-                    f for f in self._scheduled_failures
-                    if f.get('failure_time', f.get('burst_time', f.get('spike_time', f.get('drop_time', 0))) <= current_time
+                    failure
+                    for failure in self._scheduled_failures
+                    if failure.get(
+                        'failure_time',
+                        failure.get(
+                            'burst_time',
+                            failure.get('spike_time', failure.get('drop_time', 0))
+                        )
+                    )
+                    <= current_time
                 ]
                 
                 for failure in failures_to_trigger:

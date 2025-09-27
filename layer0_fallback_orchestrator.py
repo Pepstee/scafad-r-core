@@ -457,6 +457,7 @@ class FallbackState:
     cooldown_until: float = 0.0
     hysteresis_start: float = 0.0
     last_qos_scores: Dict[str, float] = field(default_factory=dict)  # Track QoS changes for hysteresis
+    last_error_rate: float = 0.0
 
 @dataclass
 class FallbackEvent:
@@ -500,6 +501,20 @@ class TelemetryTracking:
     error_count: int = 0
     performance_metrics: deque = field(default_factory=lambda: deque(maxlen=100))
     error_timestamps: deque = field(default_factory=lambda: deque(maxlen=100))  # Track error timing for rate calculation
+    last_observed_ids: Dict[str, str] = field(default_factory=dict)
+    last_event_metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+class _LastTelemetryProxy(defaultdict):
+    """Dictionary that keeps ``FallbackOrchestrator`` legacy views in sync."""
+
+    def __init__(self, orchestrator: "FallbackOrchestrator") -> None:
+        super().__init__(float)
+        self._orchestrator = orchestrator
+
+    def __setitem__(self, key: str, value: float) -> None:  # type: ignore[override]
+        super().__setitem__(key, value)
+        self._orchestrator._sync_last_seen_override(key, value)
 
 # =============================================================================
 # Main Fallback Orchestrator
@@ -513,7 +528,7 @@ class FallbackOrchestrator:
     primary telemetry channels fail or become unreliable.
     """
     
-    def __init__(self, config: Layer0Config, 
+    def __init__(self, config: Layer0Config,
                  signal_negotiator: SignalNegotiator = None,
                  redundancy_manager: RedundancyManager = None,
                  sampler: Sampler = None):
@@ -521,19 +536,21 @@ class FallbackOrchestrator:
         self.signal_negotiator = signal_negotiator
         self.redundancy_manager = redundancy_manager
         self.sampler = sampler
-        
+
         # Initialize fallback configuration
         self.thresholds = FallbackThresholds()
         self.state = FallbackState()
         self.null_model_config = NullModelConfig()
         self.metrics = FallbackMetrics()
-        
+
         # Telemetry tracking for timeout detection
         self.telemetry_tracking = TelemetryTracking()
-        
+        self.last_telemetry_seen = _LastTelemetryProxy(self)
+        self._telemetry_metadata: Dict[str, Dict[str, Any]] = {}
+
         # Fallback event history
         self.fallback_history: deque = deque(maxlen=1000)
-        
+
         # Initialize Channel Failover Matrix
         failover_config = ChannelFailoverConfig()
         self.channel_failover_matrix = ChannelFailoverMatrix(failover_config, signal_negotiator)
@@ -542,14 +559,17 @@ class FallbackOrchestrator:
         self._monitoring_active = False
         self._monitor_thread = None
         self._lock = threading.RLock()
-        
+
         # Shared state for downstream notification (thread-safe)
         self._downstream_null_model_flag = threading.Event()
         self._downstream_notification_lock = threading.RLock()
-        
+
+        # Preserve legacy integration points that external tests expect
+        self._original_log_structured_fallback = self._log_structured_fallback
+
         # Initialize fallback state
         self._initialize_fallback_state()
-        
+
         # Start background monitoring
         self._start_monitoring()
     
@@ -650,18 +670,33 @@ class FallbackOrchestrator:
     def _should_trigger_telemetry_timeout(self) -> bool:
         """Check if telemetry timeout should trigger fallback"""
         current_time = time.time()
-        
+
         # Check if we've received any telemetry data recently
-        if self.telemetry_tracking.last_telemetry_time == 0.0:
-            # First time initialization
-            return False
-        
-        time_since_telemetry = (current_time - self.telemetry_tracking.last_telemetry_time) * 1000
-        
+        last_telemetry_time = self.telemetry_tracking.last_telemetry_time
+        if last_telemetry_time == 0.0:
+            # Legacy compatibility: consult the external map updated by tests
+            candidate_keys = (
+                "telemetry",
+                "otlp_grpc",
+                "invocation_trace",
+                "side_channel_latency",
+                "cloudwatch_logs",
+                "xray_traces",
+            )
+            last_telemetry_time = max(
+                (self.last_telemetry_seen.get(key, 0.0) for key in candidate_keys),
+                default=0.0,
+            )
+            if last_telemetry_time == 0.0:
+                # First time initialization
+                return False
+
+        time_since_telemetry = (current_time - last_telemetry_time) * 1000
+
         if time_since_telemetry > self.thresholds.telemetry_timeout_ms:
             logger.warning(f"Telemetry timeout detected: {time_since_telemetry:.0f}ms since last telemetry")
             return True
-        
+
         return False
     
     def _should_trigger_data_missing(self) -> bool:
@@ -810,11 +845,28 @@ class FallbackOrchestrator:
             logger.warning(f"Error checking channel health: {e}")
             return False
     
-    def update_telemetry_tracking(self, telemetry_type: str, timestamp: float = None):
-        """Update telemetry tracking for timeout detection"""
+    def update_telemetry_tracking(
+        self,
+        telemetry_type: str,
+        timestamp: float | None = None,
+        telemetry_id: str | None = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Update telemetry tracking for timeout detection.
+
+        Legacy tests interact with a dictionary named ``last_telemetry_seen`` and
+        occasionally provide identifiers to help deduplicate telemetry events.
+        The modern orchestrator stores structured timing information inside the
+        ``TelemetryTracking`` dataclass, so this helper keeps both views in sync.
+        """
+
         if timestamp is None:
             timestamp = time.time()
-        
+
+        normalized_key = telemetry_type
+        if telemetry_type == "side_channel":
+            normalized_key = "side_channel_latency"
+
         with self._lock:
             if telemetry_type == "telemetry":
                 self.telemetry_tracking.last_telemetry_time = timestamp
@@ -822,21 +874,58 @@ class FallbackOrchestrator:
             elif telemetry_type == "invocation_trace":
                 self.telemetry_tracking.last_invocation_trace_time = timestamp
                 self.telemetry_tracking.invocation_trace_count += 1
-            elif telemetry_type == "side_channel":
+            elif telemetry_type in {"side_channel", "side_channel_latency"}:
                 self.telemetry_tracking.last_side_channel_time = timestamp
                 self.telemetry_tracking.side_channel_count += 1
             elif telemetry_type == "error":
                 self.telemetry_tracking.error_count += 1
                 # FIXED: Track error timestamps for rate calculation
                 self.telemetry_tracking.error_timestamps.append(timestamp)
-    
+
+            self.last_telemetry_seen[normalized_key] = timestamp
+
+            if telemetry_id is not None:
+                self.telemetry_tracking.last_observed_ids[normalized_key] = telemetry_id
+
+            if metadata:
+                self.telemetry_tracking.last_event_metadata[normalized_key] = metadata
+
     def update_performance_metric(self, metric_value: float, timestamp: float = None):
         """Update performance metrics for degradation detection"""
         if timestamp is None:
             timestamp = time.time()
-        
+
         with self._lock:
             self.telemetry_tracking.performance_metrics.append((timestamp, metric_value))
+
+    def update_error_rate(self, error_rate: float, timestamp: float | None = None) -> None:
+        """Record an observed error rate for sliding-window calculations."""
+
+        if timestamp is None:
+            timestamp = time.time()
+
+        with self._lock:
+            self.state.last_error_rate = error_rate
+            self.telemetry_tracking.error_count += 1
+            self.telemetry_tracking.error_timestamps.append(timestamp)
+            self.last_telemetry_seen["error_rate"] = timestamp
+
+    def _sync_last_seen_override(self, key: str, timestamp: float) -> None:
+        """Synchronize direct ``last_telemetry_seen`` writes with structured state."""
+
+        field_mapping = {
+            "telemetry": "last_telemetry_time",
+            "otlp_grpc": "last_telemetry_time",
+            "invocation_trace": "last_invocation_trace_time",
+            "side_channel": "last_side_channel_time",
+            "side_channel_latency": "last_side_channel_time",
+            "cloudwatch_logs": "last_side_channel_time",
+            "xray_traces": "last_side_channel_time",
+        }
+
+        target_field = field_mapping.get(key)
+        if target_field:
+            setattr(self.telemetry_tracking, target_field, timestamp)
     
     def _can_recover(self) -> bool:
         """Check if recovery from fallback mode is possible"""
@@ -1198,6 +1287,20 @@ class FallbackOrchestrator:
     def get_channel_failover_history(self, limit: int = 50) -> List[Dict[str, Any]]:
         """Get channel failover history from the failover matrix"""
         return self.channel_failover_matrix.get_failover_history(limit)
+
+    # ------------------------------------------------------------------
+    # Legacy compatibility properties
+    # ------------------------------------------------------------------
+
+    @property
+    def fallback_state(self) -> FallbackState:
+        """Maintain backward-compatible access to the state dataclass."""
+
+        return self.state
+
+    @fallback_state.setter
+    def fallback_state(self, new_state: FallbackState) -> None:
+        self.state = new_state
     
     def force_fallback(self, mode: FallbackMode, reason: str = "manual_override"):
         """Force fallback to specified mode (for testing/debugging)"""

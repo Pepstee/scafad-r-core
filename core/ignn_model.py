@@ -22,7 +22,7 @@ Based on research:
 import numpy as np
 import time
 import logging
-from typing import Dict, List, Tuple, Optional, Any, Set
+from typing import Dict, List, Tuple, Optional, Any, Set, TYPE_CHECKING
 from dataclasses import dataclass, field
 from enum import Enum
 import json
@@ -39,7 +39,15 @@ try:
 except ImportError:
     # Fallback implementation without PyTorch
     TORCH_AVAILABLE = False
+    torch = None  # type: ignore[assignment]
+    nn = None  # type: ignore[assignment]
+    F = None  # type: ignore[assignment]
+    Data = Any  # type: ignore[misc]
+    Batch = Any  # type: ignore[misc]
     print("Warning: PyTorch not available. Using fallback i-GNN implementation.")
+
+if TYPE_CHECKING:
+    from torch_geometric.data import Data as TGData, Batch as TGBatch
 
 logger = logging.getLogger(__name__)
 
