@@ -480,12 +480,28 @@ class TestEndToEndPipeline:
         result = asyncio.get_event_loop().run_until_complete(
             gateway.sanitize_record(adapted))
         assert result.sanitization_time_ms < 150.0, (
-            f"Sanitisation took {result.sanitization_time_ms:.1f}ms (target <150ms)")
+            f"Sanitisation took {result.sanitization_time_ms:.2f}ms, expected < 150ms"
+        )
 
-    def test_002w_delta_types_report(self):
-        # Diagnostic - always passes
-        print(f"\n[INFO] DELTA_TYPES_AVAILABLE = {DELTA_TYPES_AVAILABLE}")
-        if not DELTA_TYPES_AVAILABLE:
-            print("[INFO] Using local fallback types. "
-                  "delta layer1_sanitization.py needs structural repair.")
-        assert True
+
+# ---------------------------------------------------------------------------
+# Module-level runner
+# ---------------------------------------------------------------------------
+
+def run_sanitisation_tests():
+    print("\n" + "="*60)
+    print("TEST #002: L1 SANITISATION GATEWAY")
+    print("="*60)
+    import subprocess
+    import sys
+    result = subprocess.run(
+        [sys.executable, "-m", "pytest", __file__, "-v", "--tb=short"],
+        capture_output=False
+    )
+    print("\n" + "="*60)
+    print("L1 SANITISATION TESTS COMPLETED")
+    print("="*60)
+
+
+if __name__ == "__main__":
+    run_sanitisation_tests()

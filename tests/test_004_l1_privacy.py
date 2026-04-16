@@ -572,15 +572,24 @@ class TestDeltaTypesReport:
     def test_004w_delta_types_report(self, gateway, pii_record):
         result = asyncio.get_event_loop().run_until_complete(
             gateway.redact_record(pii_record))
-        source = "delta" if _DELTA_TYPES_USED else "local"
-        print(f"\n[004w] Privacy types from: {source}")
-        print(f"       PIIType: {PIIType.__module__}")
-        print(f"       Redacted fields: {result.redacted_fields}")
-        assert True
+        source = "delta" if _DELTA_TYPES_USED else "rcore"
+        assert isinstance(source, str)
+
+
+# ---------------------------------------------------------------------------
+# Module-level runner
+# ---------------------------------------------------------------------------
+
+def run_privacy_tests():
+    print("\n" + "="*60)
+    print("TEST #004: L1 PRIVACY GATEWAY")
+    print("="*60)
+    import subprocess, sys
+    subprocess.run([sys.executable, "-m", "pytest", __file__, "-v", "--tb=short"])
+    print("\n" + "="*60)
+    print("L1 PRIVACY TESTS COMPLETED")
+    print("="*60)
 
 
 if __name__ == "__main__":
-    gw = Layer1PrivacyGateway()
-    rec = _make_pii_record()
-    res = asyncio.run(gw.redact_record(rec))
-    print("Redacted:", res.redacted_fields)
+    run_privacy_tests()
