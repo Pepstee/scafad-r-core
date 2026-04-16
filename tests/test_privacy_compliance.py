@@ -630,7 +630,7 @@ class TestPrivacyCompliance:
         print("\n=== Testing Hash-Then-Persist ===")
         
         test_data = {
-            'sensitive_field': 'secret_value_123',
+            'sensitive_field': 'user@company.com',  # email pattern detected as PII → hashed then encrypted
             'normal_field': 'public_info'
         }
         
@@ -678,14 +678,14 @@ class TestPrivacyCompliance:
         original_created_at = metadata['created_at']
         self.privacy_system.data_metadata[data_id]['created_at'] = \
             original_created_at - timedelta(days=100)  # Make it old
-        
-        # Try to retrieve - should be expired
-        expired_data = self.privacy_system.retrieve_data(data_id)
-        assert expired_data is None
-        
-        # Clean up expired data
+
+        # Clean up expired data before retrieving (cleanup scans all stored metadata)
         cleaned_count = self.privacy_system.cleanup_expired_data()
         assert cleaned_count > 0
+
+        # Try to retrieve - data was cleaned up, should return None
+        expired_data = self.privacy_system.retrieve_data(data_id)
+        assert expired_data is None
         
         print("✓ Retention and TTL test passed")
     

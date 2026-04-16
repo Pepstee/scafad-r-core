@@ -332,7 +332,8 @@ class HeartbeatMonitor:
             'average_mttr_ms': sum(mttr_values) / len(mttr_values),
             'min_mttr_ms': min(mttr_values),
             'max_mttr_ms': max(mttr_values),
-            'mttr_target_met': all(mttr <= self.config.mttr_target_ms for mttr in mttr_values)
+            'mttr_target_met': all(mttr <= self.config.mttr_target_ms for mttr in mttr_values),
+            'mttr_metrics': list(self.mttr_metrics),
         }
     
     def simulate_component_crash(self, component_id: str, crash_type: str = "extension_crash"):
@@ -483,8 +484,10 @@ class TestHealthHeartbeat:
         # Check health - should detect timeouts
         health_summary = self.monitor.check_health()
         
-        # Components should have missed heartbeats
-        assert health_summary['degraded_components'] > 0 or health_summary['unhealthy_components'] > 0
+        # Components should have missed heartbeats (may go straight to critical after full timeout)
+        assert (health_summary['degraded_components'] > 0
+                or health_summary['unhealthy_components'] > 0
+                or health_summary['critical_components'] > 0)
         
         # Check component states
         for component_id, _ in self.test_components:
@@ -578,7 +581,7 @@ class TestHealthHeartbeat:
         assert mttr_summary['total_recoveries'] == len(failure_scenarios)
         
         # Verify MTTR values
-        for metric in self.mttr_summary['mttr_metrics']:
+        for metric in mttr_summary['mttr_metrics']:
             mttr_ms = metric['mttr_ms']
             assert mttr_ms > 0
             assert mttr_ms >= recovery_delay * 1000  # At least the recovery delay

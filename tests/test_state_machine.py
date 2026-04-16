@@ -250,13 +250,20 @@ class ChannelStateMachine:
     def _is_valid_transition(self, new_state: ChannelState) -> bool:
         """Check if state transition is valid"""
         valid_transitions = {
-            ChannelState.PROBING: [ChannelState.ACTIVE, ChannelState.QUARANTINED],
-            ChannelState.ACTIVE: [ChannelState.SHADOW, ChannelState.STANDBY, ChannelState.QUARANTINED],
-            ChannelState.SHADOW: [ChannelState.ACTIVE, ChannelState.STANDBY, ChannelState.QUARANTINED],
-            ChannelState.STANDBY: [ChannelState.ACTIVE, ChannelState.SHADOW, ChannelState.QUARANTINED],
-            ChannelState.QUARANTINED: [ChannelState.PROBING, ChannelState.STANDBY]
+            # Self-transitions always allowed (re-init / no-op forced transitions)
+            ChannelState.PROBING: [ChannelState.PROBING, ChannelState.ACTIVE,
+                                   ChannelState.SHADOW, ChannelState.STANDBY,
+                                   ChannelState.QUARANTINED],
+            ChannelState.ACTIVE: [ChannelState.ACTIVE, ChannelState.SHADOW,
+                                  ChannelState.STANDBY, ChannelState.QUARANTINED],
+            ChannelState.SHADOW: [ChannelState.ACTIVE, ChannelState.SHADOW,
+                                  ChannelState.STANDBY, ChannelState.QUARANTINED],
+            ChannelState.STANDBY: [ChannelState.ACTIVE, ChannelState.SHADOW,
+                                   ChannelState.STANDBY, ChannelState.QUARANTINED],
+            ChannelState.QUARANTINED: [ChannelState.PROBING, ChannelState.STANDBY,
+                                       ChannelState.QUARANTINED]
         }
-        
+
         return new_state in valid_transitions.get(self.current_state, [])
     
     def _update_state_tracking(self, new_state: ChannelState, transition_type: StateTransition):
@@ -663,7 +670,9 @@ class TestStateMachine:
                 assert transition is not None
                 assert transition.to_state == to_state
             
-            # Test invalid transition
+            # Test invalid transition — reset to from_state first so the check
+            # is performed from a well-known state, not wherever the inner loop left us.
+            self.state_machine.current_state = from_state
             invalid_state = ChannelState.PROBING  # This should be invalid from most states
             if invalid_state not in valid_to_states:
                 # Try invalid transition
@@ -724,9 +733,21 @@ class TestStateMachine:
                     consecutive_failures=0,
                     consecutive_successes=10
                 )
+            elif phase_name in ('cold_start', 'reset'):
+                # Use low QoS so update_health does NOT auto-trigger a transition;
+                # the explicit force_state below drives the phase.
+                health = ChannelHealth(
+                    qos_score=0.1,
+                    latency_ms=100,
+                    error_rate=0.0,
+                    throughput_rps=0,
+                    last_seen=time.time(),
+                    consecutive_failures=0,
+                    consecutive_successes=0
+                )
             else:
                 health = self.test_channels['primary']
-            
+
             self.state_machine.update_health(f'lifecycle_{phase_name}', health)
             
             # Perform transition

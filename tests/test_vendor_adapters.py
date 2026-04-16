@@ -15,6 +15,7 @@ import pytest
 import time
 import asyncio
 import threading
+import random
 from unittest.mock import Mock, patch, MagicMock
 import sys
 import os
@@ -272,7 +273,10 @@ class TestVendorAdapters:
         
         adapter = self.adapters[ProviderType.CLOUDWATCH]
         config = adapter.config
-        
+
+        # Disable random failure injection so only rate-limit rejections trigger
+        adapter._should_fail = lambda: False
+
         # Send requests up to rate limit
         success_count = 0
         for i in range(config.rate_limit_rps + 10):
@@ -352,35 +356,42 @@ class TestVendorAdapters:
         print("\n=== Testing Error Mapping ===")
         
         adapter = self.adapters[ProviderType.CLOUDWATCH]
-        
+
+        # Disable random failures so only structural limits (rate/quota/size) trigger
+        adapter._should_fail = lambda: False
+
         # Test different error conditions
         error_tests = [
             (ErrorType.RATE_LIMIT, "rate_limit"),
             (ErrorType.QUOTA_EXHAUSTED, "quota_exhausted"),
             (ErrorType.PAYLOAD_TOO_LARGE, "payload_too_large"),
         ]
-        
+
         for error_type, test_name in error_tests:
             if error_type == ErrorType.RATE_LIMIT:
-                # Fill rate limit
-                for i in range(adapter.config.rate_limit_rps + 1):
-                    adapter.send_telemetry({"test": f"rate_limit_{i}"})
-                
+                # Fill rate limit — send exactly rate_limit_rps successful requests
+                adapter.current_rate = adapter.config.rate_limit_rps  # simulate full window
+
                 # Next request should hit rate limit
                 success, response = adapter.send_telemetry({"test": "rate_limit_test"})
                 assert not success
                 assert response["error"] == error_type.value
-                
+
+                # Reset for next test
+                adapter.current_rate = 0
+
             elif error_type == ErrorType.QUOTA_EXHAUSTED:
-                # Fill quota
-                for i in range(adapter.config.quota_budget + 1):
-                    adapter.send_telemetry({"test": f"quota_{i}"})
-                
+                # Directly exhaust quota rather than iterating 10000 requests
+                adapter.quota_used = adapter.config.quota_budget
+
                 # Next request should hit quota limit
                 success, response = adapter.send_telemetry({"test": "quota_test"})
                 assert not success
                 assert response["error"] == error_type.value
-                
+
+                # Reset quota for subsequent tests
+                adapter.quota_used = 0
+
             elif error_type == ErrorType.PAYLOAD_TOO_LARGE:
                 # Send oversized payload
                 large_payload = {"test": "large", "data": "x" * (adapter.config.payload_max_size_bytes + 1000)}
@@ -434,11 +445,10 @@ class TestVendorAdapters:
         print("\n=== Testing Quota Exhaustion Backoff ===")
         
         adapter = self.adapters[ProviderType.CLOUDWATCH]
-        
-        # Fill quota completely
-        for i in range(adapter.config.quota_budget):
-            adapter.send_telemetry({"test": f"quota_fill_{i}"})
-        
+
+        # Directly exhaust quota (avoids rate-limit window blocking the fill loop)
+        adapter.quota_used = adapter.config.quota_budget
+
         # Verify quota is exhausted
         status = adapter.get_status()
         assert status['quota_used'] >= adapter.config.quota_budget
@@ -487,8 +497,9 @@ class TestVendorAdapters:
         success2, response2 = cloudwatch.send_telemetry({"test": "test2"}, idempotency_key)
         assert success1
         assert response2["status"] == "duplicate"
-        
+
         # X-Ray should process both
+        xray._should_fail = lambda: False
         success3, _ = xray.send_telemetry({"test": "test3"}, idempotency_key)
         success4, _ = xray.send_telemetry({"test": "test4"}, idempotency_key)
         assert success3
@@ -533,7 +544,10 @@ class TestVendorAdapters:
         print("\n=== Testing End-to-End Adapter Flow ===")
         
         adapter = self.adapters[ProviderType.CLOUDWATCH]
-        
+
+        # Disable random failures so phases 1 and 3 have deterministic success
+        adapter._should_fail = lambda: False
+
         # Phase 1: Normal operation
         print("Phase 1: Normal operation")
         for i in range(50):

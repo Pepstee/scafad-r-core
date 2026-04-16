@@ -29,7 +29,7 @@ import math
 import time
 import unittest
 from typing import Dict, List, Any
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch, MagicMock, AsyncMock
 
 # Import SCAFAD components
 from app_main import Layer0_AdaptiveTelemetryController
@@ -276,7 +276,7 @@ class TestCriticalFixes(unittest.TestCase):
         controller.formal_verifier = Mock()
         
         # Test with invalid score (out of bounds)
-        controller.formal_verifier.verify_telemetry_completeness = Mock(
+        controller.formal_verifier.verify_telemetry_completeness = AsyncMock(
             return_value={'overall_score': 1.5}  # Invalid (>1.0)
         )
         
@@ -297,7 +297,7 @@ class TestCriticalFixes(unittest.TestCase):
         
         # Mock telemetry manager
         controller.telemetry_manager = Mock()
-        controller.telemetry_manager.emit_telemetry = Mock(return_value={'status': 'success'})
+        controller.telemetry_manager.emit_telemetry = AsyncMock(return_value={'status': 'success', 'total_success': 1})
         
         # Test the verification and emission process
         async def test_verification():
