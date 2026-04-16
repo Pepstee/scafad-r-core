@@ -7,16 +7,28 @@ def test_all_functions():
     """Test all functions from test_adversarial.py"""
     
     # Import required modules
-    from test_adversarial import (
-        make_record, 
-        test_noise_injection_does_not_mutate_original,
-        test_gradient_masking_adds_time_jitter,
-        test_input_transformation_logarithmic,
-        test_adaptive_perturbation_with_epsilon,
-        test_attack_vector_defaults,
-        test_adversarial_config_validation,
-        test_engine_generates_attack
-    )
+    try:
+        from tests.test_adversarial import (
+            make_record,
+            test_noise_injection_does_not_mutate_original,
+            test_gradient_masking_adds_time_jitter,
+            test_input_transformation_logarithmic,
+            test_adaptive_perturbation_with_epsilon,
+            test_attack_vector_defaults,
+            test_adversarial_config_validation,
+            test_engine_generates_attack,
+        )
+    except ModuleNotFoundError:
+        from test_adversarial import (
+            make_record,
+            test_noise_injection_does_not_mutate_original,
+            test_gradient_masking_adds_time_jitter,
+            test_input_transformation_logarithmic,
+            test_adaptive_perturbation_with_epsilon,
+            test_attack_vector_defaults,
+            test_adversarial_config_validation,
+            test_engine_generates_attack,
+        )
     
     print("Testing all functions from test_adversarial.py:")
     
@@ -54,8 +66,6 @@ def test_all_functions():
     print("✓ test_engine_generates_attack() works")
     
     print("\n✅ ALL TESTS PASSED SUCCESSFULLY!")
-    return True
-
 if __name__ == "__main__":
     import sys
     try:

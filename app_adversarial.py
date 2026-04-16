@@ -2834,6 +2834,7 @@ class AdversarialRobustnessAnalyzer:
         analysis['improvement_recommendations'] = self._generate_improvement_recommendations(
             analysis['robustness_scores'], analysis['vulnerability_assessment']
         )
+        analysis['recommendations'] = analysis['improvement_recommendations']
         
         # Compare against benchmarks
         analysis['benchmark_comparison'] = self._compare_to_benchmarks(

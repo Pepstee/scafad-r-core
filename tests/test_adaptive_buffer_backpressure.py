@@ -293,6 +293,7 @@ class TestAdaptiveBufferBackpressure:
         status = self.buffer.get_status()
         print(f"High watermark batch size: {status['batch_size']}")
         assert status['batch_size'] < initial_batch_size
+        reduced_batch_size = status['batch_size']
         
         # Drain queue to low watermark to trigger batch size increase
         while self.buffer.current_size > int(self.buffer.max_queue_size * self.buffer.low_watermark):
@@ -300,7 +301,7 @@ class TestAdaptiveBufferBackpressure:
         
         status = self.buffer.get_status()
         print(f"Low watermark batch size: {status['batch_size']}")
-        assert status['batch_size'] > status['batch_size']  # Should have increased
+        assert status['batch_size'] > reduced_batch_size  # Should have increased
         
         print("✓ Batch resizing test passed")
     
@@ -317,6 +318,9 @@ class TestAdaptiveBufferBackpressure:
             success = self.buffer.enqueue(f"item_{i}")
             if not success:
                 break
+
+        assert self.buffer.current_size == self.buffer.max_queue_size
+        self.buffer.loss_policy = LossPolicy.LOSSLESS_BLOCK
         
         # Should block when full
         success = self.buffer.enqueue("blocked_item")

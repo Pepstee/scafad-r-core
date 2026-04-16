@@ -252,7 +252,9 @@ class TestPoisoningAttackGenerator:
                            if record.custom_fields.get('poisoned', False))
         actual_poison_rate = poisoned_count / len(poisoned_data)
         
-        assert 0 <= actual_poison_rate <= poison_rate * 1.5  # Allow some variance
+        # Small datasets can quantize a non-zero poison rate up to a single sample.
+        max_expected_rate = max(poison_rate * 1.5, 1 / len(poisoned_data))
+        assert 0 <= actual_poison_rate <= max_expected_rate
         assert len(poisoned_data) == len(self.test_data)
         
         # Check that labels were flipped
@@ -1394,7 +1396,7 @@ class TestIntegrationScenarios:
         )
         
         assert 'robustness_scores' in robustness_analysis
-        assert 'recommendations' in robustness_analysis
+        assert 'improvement_recommendations' in robustness_analysis
     
     @pytest.mark.asyncio
     async def test_campaign_orchestration_workflow(self):
