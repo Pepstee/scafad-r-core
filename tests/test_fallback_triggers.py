@@ -134,8 +134,12 @@ class TestFallbackTriggers:
         initial_status = self.orchestrator.get_fallback_status()
         print(f"Initial status: {initial_status['current_mode']}")
         
-        # Simulate missing data by setting old timestamps
+        # Simulate missing data by setting old timestamps.
+        # First set a fresh overall telemetry time so the timeout check does not
+        # fire before the data_missing check.  The timeout check reads
+        # last_telemetry_time directly; data_missing reads the per-stream times.
         current_time = time.time()
+        self.orchestrator.update_telemetry_tracking('telemetry', current_time)
         self.orchestrator.last_telemetry_seen['invocation_trace'] = current_time - 15.0  # 15 seconds ago (> 10s threshold)
         self.orchestrator.last_telemetry_seen['side_channel_latency'] = current_time - 12.0  # 12 seconds ago (> 10s threshold)
         self.orchestrator.last_telemetry_seen['cloudwatch_logs'] = current_time - 20.0  # 20 seconds ago (> 15s threshold)
@@ -392,9 +396,9 @@ def run_comprehensive_tests():
     print(f"Test Results: {passed}/{total} tests passed")
     
     if passed == total:
-        print("🎉 All fallback trigger tests passed!")
+        print("\U0001f389 All fallback trigger tests passed\!")
     else:
-        print(f"⚠️  {total - passed} tests failed")
+        print(f"\u26a0\ufe0f  {total - passed} tests failed")
     
     return passed == total
 

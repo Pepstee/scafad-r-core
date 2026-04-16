@@ -1346,12 +1346,12 @@ class PoisoningAttackGenerator:
         
         if poison_rate > self.max_poison_rate:
             raise ValueError(f"Poison rate {poison_rate} exceeds maximum {self.max_poison_rate}")
-        
-        poisoned_data = [d.__class__(**d.__dict__) for d in data] # Deep copy
-        num_to_poison = int(len(data) * poison_rate)
-        
+
         if not data:
             return []
+
+        poisoned_data = [d.__class__(**d.__dict__) for d in data]
+        num_to_poison = max(1, int(len(data) * poison_rate)) if poison_rate > 0 else 0
 
         # Select random samples to poison
         poison_indices = random.sample(range(len(data)), num_to_poison)
@@ -2207,6 +2207,50 @@ class AdversarialAnomalyEngine:
         stats["economic_impact"] = total_economic_impact
         
         return stats
+
+    def get_attack_effectiveness_report(self) -> Dict[str, Any]:
+        """Generate a compact effectiveness summary from tracked attack results."""
+        if not self.detection_performance:
+            return {
+                "generation_timestamp": time.time(),
+                "total_attack_types_tested": 0,
+                "overall_statistics": {
+                    "total_attacks_executed": 0,
+                    "overall_success_rate": 0.0,
+                    "overall_detection_rate": 0.0,
+                    "total_economic_impact": 0.0,
+                },
+                "attack_type_analysis": {},
+            }
+
+        all_stats = list(self.detection_performance.values())
+        total_attempts = sum(stats.get("total_attempts", 0) for stats in all_stats)
+        total_successes = sum(stats.get("successful_evasions", 0) for stats in all_stats)
+        total_economic_impact = sum(stats.get("economic_impact", 0.0) for stats in all_stats)
+
+        report = {
+            "generation_timestamp": time.time(),
+            "total_attack_types_tested": len(self.detection_performance),
+            "overall_statistics": {
+                "total_attacks_executed": total_attempts,
+                "overall_success_rate": (total_successes / total_attempts) if total_attempts else 0.0,
+                "overall_detection_rate": ((total_attempts - total_successes) / total_attempts) if total_attempts else 0.0,
+                "total_economic_impact": total_economic_impact,
+            },
+            "attack_type_analysis": {},
+        }
+
+        for attack_type, stats in self.detection_performance.items():
+            report["attack_type_analysis"][attack_type] = {
+                "attempts": stats.get("total_attempts", 0),
+                "success_rate": stats.get("success_rate", 0.0),
+                "detection_rate": stats.get("detection_rate", 0.0),
+                "average_stealth": stats.get("average_stealth", 0.0),
+                "average_perturbation": stats.get("average_perturbation", 0.0),
+                "economic_impact": stats.get("economic_impact", 0.0),
+            }
+
+        return report
     
     # Utility methods
     

@@ -1303,15 +1303,58 @@ class FallbackOrchestrator:
         self.state = new_state
     
     def force_fallback(self, mode: FallbackMode, reason: str = "manual_override"):
-        """Force fallback to specified mode (for testing/debugging)"""
+        """Force fallback to specified mode (for testing/debugging).
+
+        Manages cooldown/hysteresis so the forced state is self-consistent:
+        - Forcing NORMAL fully resets cooldown, hysteresis, and active triggers so
+          subsequent _check_fallback_conditions calls are not spuriously blocked.
+        - Forcing any non-NORMAL mode sets cooldown and hysteresis as if the
+          orchestrator had genuinely entered that mode via _trigger_fallback.
+        """
         with self._lock:
             previous_mode = self.state.mode
+            current_time = time.time()
             self.state.mode = mode
-            self.state.last_fallback_time = time.time()
-            
+            self.state.last_fallback_time = current_time
+
+            if mode == FallbackMode.NORMAL:
+                # Full reset: allow immediate re-triggering after a forced NORMAL.
+                self.state.cooldown_until = 0.0
+                self.state.hysteresis_start = 0.0
+                self.state.active_triggers.clear()
+                # Reset telemetry timing to 0.0 (clean-slate, not "fresh now") so
+                # stale timestamps left by a prior test do not fire timeout or
+                # data_missing spuriously.  Resetting to 0.0 matches the initial
+                # state: _should_trigger_telemetry_timeout returns False when
+                # last_telemetry_time == 0.0 and no candidate keys are set;
+                # _should_trigger_data_missing skips checks when the per-stream
+                # times are 0.0.  Tests that want stale timestamps set them
+                # explicitly afterwards via last_telemetry_seen or
+                # update_telemetry_tracking.
+                self.telemetry_tracking.last_telemetry_time = 0.0
+                self.telemetry_tracking.last_invocation_trace_time = 0.0
+                self.telemetry_tracking.last_side_channel_time = 0.0
+                # Also clear the proxy dict so stale per-key entries from a
+                # prior test do not survive into the next test via the
+                # candidate_keys fallback in _should_trigger_telemetry_timeout.
+                dict.clear(self.last_telemetry_seen)
+                # Reset per-event counters and sliding-window buffers so
+                # error-rate and performance checks start from a clean slate.
+                self.telemetry_tracking.telemetry_count = 0
+                self.telemetry_tracking.invocation_trace_count = 0
+                self.telemetry_tracking.side_channel_count = 0
+                self.telemetry_tracking.error_count = 0
+                self.telemetry_tracking.error_timestamps.clear()
+                self.telemetry_tracking.performance_metrics.clear()
+            else:
+                # Simulate a genuine transition so cooldown is active in the
+                # forced non-NORMAL state (matches _trigger_fallback behaviour).
+                self.state.cooldown_until = current_time + self.thresholds.cooldown_period_ms / 1000.0
+                self.state.hysteresis_start = current_time
+
             # Record forced fallback
             fallback_event = FallbackEvent(
-                timestamp=time.time(),
+                timestamp=current_time,
                 trigger=FallbackTrigger.MANUAL_TRIGGER,
                 reason=FallbackReason.MANUAL_OVERRIDE,
                 previous_mode=previous_mode,
@@ -1319,7 +1362,7 @@ class FallbackOrchestrator:
                 metadata={'reason': reason, 'forced': True}
             )
             self.fallback_history.append(fallback_event)
-            
+
             logger.warning(f"Forced fallback: {previous_mode} -> {mode} (Reason: {reason})")
     
     def shutdown(self):

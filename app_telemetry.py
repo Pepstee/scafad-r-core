@@ -1360,7 +1360,7 @@ class MultiChannelTelemetry:
         if priority >= 8:  # High priority - immediate emission
             emission_results = await self._emit_immediate(telemetry)
         else:  # Normal priority - can be queued
-            emission_results = await self._emit_with_queue(telemetry)
+            emission_results = await self._emit_immediate(telemetry)
         
         # Analyze results
         for channel_name, result in emission_results.items():
@@ -1629,7 +1629,7 @@ class MultiChannelTelemetry:
             if hasattr(channel, 'emit_async'):
                 result = await channel.emit_async(telemetry, priority=priority)
             elif hasattr(channel, 'emit'):
-                result = channel.emit(telemetry)
+                result = await channel.emit(telemetry)
             else:
                 # Fallback for simple channels
                 result = {'success': True, 'timestamp': time.time()}
@@ -1672,7 +1672,8 @@ class MultiChannelTelemetry:
                 cpu_utilization=0.0,
                 network_io_bytes=0,
                 fallback_mode=True,
-                source=TelemetrySource.FALLBACK_GENERATOR
+                source=TelemetrySource.FALLBACK_GENERATOR,
+                concurrency_id=f"fallback_{int(time.time() * 1000)}",
             )
             
             # Add error context
@@ -1697,7 +1698,8 @@ class MultiChannelTelemetry:
                 cpu_utilization=0.0,
                 network_io_bytes=0,
                 fallback_mode=True,
-                source=TelemetrySource.FALLBACK_GENERATOR
+                source=TelemetrySource.FALLBACK_GENERATOR,
+                concurrency_id=f"emergency_{int(time.time() * 1000)}",
             )
     
     def get_performance_metrics(self) -> Dict[str, Any]:

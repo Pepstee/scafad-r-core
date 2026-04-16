@@ -290,11 +290,8 @@ class RuntimeControlLoop:
             if not channel_health:
                 # First-time initialization - perform full negotiation
                 logger.info("Performing first-time channel negotiation")
-                # Note: In a real async context, this would be awaited
-                # For now, we'll use the sync version or handle it in the async control loop
                 try:
-                    # This would be await self.signal_negotiator.negotiate_all_channels() in async context
-                    negotiation_results = self.signal_negotiator.negotiate_all_channels()
+                    negotiation_results = self._run_negotiation()
                     
                     # Update redundancy manager based on negotiation results
                     if self.redundancy_manager and negotiation_results:
@@ -319,15 +316,7 @@ class RuntimeControlLoop:
                         if hasattr(self.signal_negotiator, 'negotiate_all_channels_sync'):
                             negotiation_results = self.signal_negotiator.negotiate_all_channels_sync()
                         else:
-                            # Fallback to async with new event loop
-                            loop = asyncio.new_event_loop()
-                            asyncio.set_event_loop(loop)
-                            try:
-                                negotiation_results = loop.run_until_complete(
-                                    self.signal_negotiator.negotiate_all_channels()
-                                )
-                            finally:
-                                loop.close()
+                            negotiation_results = self._run_negotiation()
                         
                         # Update redundancy manager with new results
                         if negotiation_results and self.redundancy_manager:
@@ -424,6 +413,14 @@ class RuntimeControlLoop:
             
         except Exception as e:
             logger.error(f"Error updating channel priorities: {e}")
+
+    def _run_negotiation(self) -> Dict[str, Any]:
+        """Run async channel negotiation from the control loop thread."""
+        loop = asyncio.new_event_loop()
+        try:
+            return loop.run_until_complete(self.signal_negotiator.negotiate_all_channels())
+        finally:
+            loop.close()
     
     def _schedule_renegotiation(self):
         """Schedule periodic renegotiation for runtime QoS updates"""
@@ -915,11 +912,11 @@ class RuntimeControlLoop:
         current_time = time.time()
         
         # Check if enough time has passed since last adaptation
-        if current_time - self.control_metrics.last_adaptation_time < self.config.adaptation_interval_ms / 1000.0:
+        if current_time - self.control_metrics.last_adaptation_time < self.adaptation_interval_ms / 1000.0:
             return False
         
         # Check if adaptation success rate is below threshold
-        if self.control_metrics.adaptation_success_rate < self.config.adaptation_threshold:
+        if self.control_metrics.adaptation_success_rate < self.adaptation_threshold:
             return True
         
         return False
@@ -1175,8 +1172,8 @@ class RuntimeControlLoop:
             self.control_events.append(event)
             
             # Keep only recent events
-            if len(self.control_events) > self.config.max_control_events:
-                self.control_events = self.control_events[-self.config.max_control_events:]
+            while len(self.control_events) > self.max_control_events:
+                self.control_events.popleft()
                 
             logger.debug(f"Control event recorded: {phase_name} - {'SUCCESS' if success else 'FAILED'} in {duration_ms:.2f}ms")
             
@@ -1186,19 +1183,17 @@ class RuntimeControlLoop:
     def _update_phase_success_rate(self, metric_name: str, success: bool):
         """Update phase-specific success rate"""
         try:
-            current_rate = getattr(self.control_metrics, metric_name)
-            # Simple moving average update
-            if hasattr(self.control_metrics, f'{metric_name}_count'):
-                count = getattr(self.control_metrics, f'{metric_name}_count')
-                count += 1
-                setattr(self.control_metrics, f'{metric_name}_count', count)
-                new_rate = (current_rate * (count - 1) + (1.0 if success else 0.0)) / count
-            else:
-                # Initialize count
-                setattr(self.control_metrics, f'{metric_name}_count', 1)
-                new_rate = 1.0 if success else 0.0
-            
-            setattr(self.control_metrics, metric_name, new_rate)
+            rate_attr = f"{metric_name}_success_rate"
+            count_attr = f"{metric_name}_count"
+
+            if not hasattr(self.control_metrics, rate_attr):
+                return
+
+            current_rate = getattr(self.control_metrics, rate_attr)
+            count = getattr(self.control_metrics, count_attr, 0) + 1
+            setattr(self.control_metrics, count_attr, count)
+            new_rate = (current_rate * (count - 1) + (1.0 if success else 0.0)) / count
+            setattr(self.control_metrics, rate_attr, new_rate)
             
         except Exception as e:
             logger.warning(f"Error updating phase success rate: {e}")

@@ -148,9 +148,21 @@ class TestFallbackOrchestrationMatrix:
         
         # Reset to normal mode
         self.orchestrator.force_fallback(FallbackMode.NORMAL, "test_reset")
-        
-        # Simulate HTTP 5xx errors
-        for i in range(15):  # Trigger error rate threshold
+
+        # Freshen last_telemetry_time so the timeout check does not fire
+        # before the error-rate check when this test is called after another
+        # test that left a stale telemetry timestamp (e.g. in the matrix chain).
+        # Also seed invocation_trace events so total_telemetry > 0:
+        # _should_trigger_error_rate divides recent errors by
+        # (telemetry_count + invocation_trace_count + side_channel_count) and
+        # error-type events do not increment those counters.
+        current_time = time.time()
+        self.orchestrator.update_telemetry_tracking('telemetry', current_time)
+        for i in range(5):
+            self.orchestrator.update_telemetry_tracking('invocation_trace', current_time)
+
+        # Simulate HTTP 5xx errors (15 errors / 5 normal = 300% >> 20% threshold)
+        for i in range(15):
             self.orchestrator.update_telemetry_tracking('error', time.time())
         
         # Mock channel health showing HTTP JSON issues
@@ -213,8 +225,14 @@ class TestFallbackOrchestrationMatrix:
         self.orchestrator.force_fallback(FallbackMode.DEGRADED, "test_recovery")
         initial_status = self.orchestrator.get_fallback_status()
         print(f"Initial status: {initial_status['current_mode']}")
-        
-        # Mock channel health recovery
+
+        # Seed last_qos_scores with low baselines so all QoS deltas exceed the
+        # 0.1 hysteresis threshold in _test_recovery_conditions.
+        self.orchestrator.state.last_qos_scores = {
+            'otlp_grpc': 0.2, 'vendor_native': 0.2, 'http_json': 0.2, 'local_spool': 0.2
+        }
+
+        # Mock channel health recovery (healthy improvement on every channel)
         self.mock_signal_negotiator.get_channel_health_summary.return_value = {
             'otlp_grpc': {'qos_score': 0.95, 'latency_ms': 30, 'status': 'active'},
             'vendor_native': {'qos_score': 0.9, 'latency_ms': 80, 'status': 'active'},
@@ -352,9 +370,9 @@ def run_fallback_matrix_tests():
             test_suite.setup_method()
             method = getattr(test_suite, method_name)
             method()
-            print(f"✓ {method_name} completed successfully")
+            print(f"\u2713 {method_name} completed successfully")
         except Exception as e:
-            print(f"✗ {method_name} failed: {e}")
+            print(f"\u2717 {method_name} failed: {e}")
         finally:
             test_suite.teardown_method()
     

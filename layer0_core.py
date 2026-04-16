@@ -2467,6 +2467,12 @@ class AnomalyDetectionEngine:
             'detection_stats': self.get_detection_statistics()
         }
 
+    def get_detection_status(self) -> Dict[str, Any]:
+        """Compatibility wrapper for runtime control consumers."""
+        status = self.get_model_status()
+        status['current_mode'] = 'active'
+        return status
+
 # =============================================================================
 # Factory and Utility Functions
 # =============================================================================

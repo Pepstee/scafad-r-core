@@ -974,6 +974,45 @@ class FormalVerificationEngine:
         self.cache_lock = threading.Lock()
         
         logger.info(f"Advanced formal verification engine initialized for node {self.node_id}")
+
+    async def verify_telemetry_completeness(self, telemetry_trace: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Provide a lightweight completeness check for the live Layer 0 handler."""
+        if not telemetry_trace:
+            return {
+                "overall_score": 0.0,
+                "verified": False,
+                "issues": ["empty_telemetry_trace"],
+            }
+
+        required_fields = {
+            "event_id",
+            "timestamp",
+            "function_id",
+            "execution_phase",
+            "anomaly_type",
+            "duration",
+            "memory_spike_kb",
+            "cpu_utilization",
+            "network_io_bytes",
+            "source",
+        }
+
+        scores = []
+        issues = []
+        for index, record in enumerate(telemetry_trace):
+            present = sum(1 for field in required_fields if record.get(field) is not None)
+            score = present / len(required_fields)
+            scores.append(score)
+            if score < 1.0:
+                missing = sorted(field for field in required_fields if record.get(field) is None)
+                issues.append({"record_index": index, "missing_fields": missing})
+
+        overall_score = sum(scores) / len(scores)
+        return {
+            "overall_score": overall_score,
+            "verified": overall_score >= 0.8,
+            "issues": issues,
+        }
     
     def _initialize_serverless_properties(self) -> Dict[str, ServerlessProperty]:
         """Initialize comprehensive serverless properties"""
