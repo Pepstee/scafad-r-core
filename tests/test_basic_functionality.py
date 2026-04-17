@@ -17,12 +17,11 @@ def test_imports():
             EconomicAttackSimulator, AdversarialTestSuite
         )
         print("✓ All imports successful")
-        return True
     except Exception as e:
         print(f"✗ Import failed: {e}")
         import traceback
         traceback.print_exc()
-        return False
+        raise AssertionError(f"Import failed: {e}") from e
 
 def test_basic_instantiation():
     """Test basic class instantiation"""
@@ -33,12 +32,11 @@ def test_basic_instantiation():
         config = AdversarialConfig(adversarial_mode=AdversarialMode.TEST)
         engine = AdversarialAnomalyEngine(config)
         print("✓ Basic instantiation successful")
-        return True
     except Exception as e:
         print(f"✗ Instantiation failed: {e}")
         import traceback
         traceback.print_exc()
-        return False
+        raise AssertionError(f"Instantiation failed: {e}") from e
 
 def test_telemetry_record_creation():
     """Test TelemetryRecord creation"""
@@ -60,12 +58,11 @@ def test_telemetry_record_creation():
             concurrency_id="test_concurrency_001"
         )
         print("✓ TelemetryRecord creation successful")
-        return True
     except Exception as e:
         print(f"✗ TelemetryRecord creation failed: {e}")
         import traceback
         traceback.print_exc()
-        return False
+        raise AssertionError(f"TelemetryRecord creation failed: {e}") from e
 
 def test_evasion_techniques():
     """Test EvasionTechniques static methods"""
@@ -98,12 +95,11 @@ def test_evasion_techniques():
         assert masked_record.timestamp >= record.timestamp
         
         print("✓ EvasionTechniques methods work")
-        return True
     except Exception as e:
         print(f"✗ EvasionTechniques test failed: {e}")
         import traceback
         traceback.print_exc()
-        return False
+        raise AssertionError(f"EvasionTechniques test failed: {e}") from e
 
 def test_adversarial_config_validation():
     """Test AdversarialConfig validation"""
@@ -123,12 +119,11 @@ def test_adversarial_config_validation():
         assert len(bad_issues) > 0
         
         print("✓ AdversarialConfig validation works")
-        return True
     except Exception as e:
         print(f"✗ AdversarialConfig validation test failed: {e}")
         import traceback
         traceback.print_exc()
-        return False
+        raise AssertionError(f"AdversarialConfig validation test failed: {e}") from e
 
 async def test_async_attack_generation():
     """Test async attack generation"""
@@ -164,12 +159,11 @@ async def test_async_attack_generation():
         assert len(attack_result.generated_telemetry) > 0
         
         print("✓ Async attack generation successful")
-        return True
     except Exception as e:
         print(f"✗ Async attack generation failed: {e}")
         import traceback
         traceback.print_exc()
-        return False
+        raise AssertionError(f"Async attack generation failed: {e}") from e
 
 async def main():
     """Run all tests"""

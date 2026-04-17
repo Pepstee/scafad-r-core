@@ -13,7 +13,10 @@ def test_critical_fixes():
         
         # Test 1: Import test
         print("\n1. Testing imports...")
-        import test_adversarial
+        try:
+            from tests import test_adversarial
+        except ImportError:
+            import test_adversarial
         print("✅ Main module imported")
         
         # Test 2: Basic functionality
@@ -100,19 +103,21 @@ def test_critical_fixes():
         print("✅ surrogate_models fix works")
         
         print("\n🎉 ALL CRITICAL FIXES VALIDATED!")
-        return True
         
     except Exception as e:
         print(f"\n❌ Critical error: {e}")
         import traceback
         traceback.print_exc()
-        return False
+        raise AssertionError(f"Critical error: {e}") from e
 
 def test_validation_framework():
     """Test the validation framework fixes"""
     try:
         print("\n6. Testing validation framework fixes...")
-        import test_adversarial
+        try:
+            from tests import test_adversarial
+        except ImportError:
+            import test_adversarial
         
         framework_test = test_adversarial.TestAdversarialValidationFramework()
         framework_test.setup_method()
@@ -136,11 +141,10 @@ def test_validation_framework():
             assert 0.0 <= validation_scores[metric] <= 1.0
         
         print("✅ Validation framework works")
-        return True
         
     except Exception as e:
         print(f"❌ Validation framework error: {e}")
-        return False
+        raise AssertionError(f"Validation framework error: {e}") from e
 
 def main():
     """Main test runner"""

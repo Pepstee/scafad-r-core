@@ -463,9 +463,12 @@ class TestVendorAdapters:
         
         # Wait for quota reset (simulate)
         adapter.quota_reset_time = time.time() - 1  # Force reset
+        adapter.rate_window_start = time.time()
+        adapter.current_rate = 0
         
         # Should work again
-        success, response = adapter.send_telemetry({"test": "quota_reset"})
+        with patch("random.random", return_value=0.99):
+            success, response = adapter.send_telemetry({"test": "quota_reset"})
         assert success
         
         print("✓ Quota exhaustion backoff test passed")

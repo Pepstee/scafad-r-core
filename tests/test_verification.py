@@ -7,7 +7,10 @@ def test_basic_import():
     """Test that test_adversarial.py can be imported"""
     try:
         print("Testing import of test_adversarial...")
-        import test_adversarial
+        try:
+            from tests import test_adversarial
+        except ImportError:
+            import test_adversarial
         print("✅ test_adversarial imported successfully!")
         
         # Test make_record function
@@ -18,18 +21,20 @@ def test_basic_import():
         sample = test_adversarial.TestFixtures.create_sample_telemetry()
         print(f"✅ TestFixtures.create_sample_telemetry() works: {sample.event_id}")
         
-        return True
         
     except Exception as e:
         print(f"❌ Error: {e}")
         import traceback
         traceback.print_exc()
-        return False
+        raise AssertionError(f"Error: {e}") from e
 
 def test_individual_functions():
     """Test individual functions"""
     try:
-        import test_adversarial
+        try:
+            from tests import test_adversarial
+        except ImportError:
+            import test_adversarial
         
         print("\nTesting individual test functions...")
         
@@ -55,11 +60,11 @@ def test_individual_functions():
                 print(f"❌ {func_name}() failed: {e}")
         
         print(f"\n📊 Results: {passed}/{len(functions_to_test)} functions passed")
-        return passed == len(functions_to_test)
+        assert passed == len(functions_to_test)
         
     except Exception as e:
         print(f"❌ Error testing functions: {e}")
-        return False
+        raise AssertionError(f"Error testing functions: {e}") from e
 
 def main():
     """Main test function"""

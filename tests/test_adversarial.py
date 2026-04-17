@@ -1133,7 +1133,6 @@ class TestTransferAttackEngine:
         assert 0.0 <= low_score <= 1.0
 
 
-@pytest.mark.asyncio
 class TestPerformanceAndScalability:
     """Test performance and scalability aspects"""
     
@@ -1144,6 +1143,7 @@ class TestPerformanceAndScalability:
         self.large_dataset_size = 1000
         self.concurrent_requests = 50
     
+    @pytest.mark.asyncio
     async def test_attack_generation_performance(self):
         """Test attack generation performance"""
         sample_telemetry = TestFixtures.create_sample_telemetry()
@@ -1166,6 +1166,7 @@ class TestPerformanceAndScalability:
         avg_time_per_attack = total_time / 10
         assert avg_time_per_attack < 0.5, f"Average time per attack: {avg_time_per_attack:.3f}s"
     
+    @pytest.mark.asyncio
     async def test_concurrent_attack_generation(self):
         """Test concurrent attack generation"""
         sample_telemetry = TestFixtures.create_sample_telemetry()
@@ -1253,6 +1254,7 @@ class TestErrorHandlingAndEdgeCases:
             task = self.engine.generate_adversarial_anomaly(sample_telemetry, AttackType.NOISE_INJECTION)
             # Should not raise exception
             assert asyncio.iscoroutine(task)
+            task.close()
     
     def test_empty_dataset_handling(self):
         """Test handling of empty datasets"""

@@ -6,7 +6,10 @@ Quick validation of the fixes applied to test_adversarial.py
 def test_imports():
     """Test that all imports work after fixes"""
     try:
-        import test_adversarial
+        try:
+            from tests import test_adversarial
+        except ImportError:
+            import test_adversarial
         print("✅ test_adversarial imported successfully")
         
         # Test basic functionality
@@ -17,17 +20,19 @@ def test_imports():
         sample = test_adversarial.TestFixtures.create_sample_telemetry() 
         print(f"✅ TestFixtures work: {sample.event_id}")
         
-        return True
     except Exception as e:
         print(f"❌ Import error: {e}")
         import traceback
         traceback.print_exc()
-        return False
+        raise AssertionError(f"Import error: {e}") from e
 
 def test_basic_functions():
     """Test the standalone functions work"""
     try:
-        import test_adversarial
+        try:
+            from tests import test_adversarial
+        except ImportError:
+            import test_adversarial
         
         print("Testing standalone functions...")
         
@@ -53,18 +58,20 @@ def test_basic_functions():
         test_adversarial.test_engine_generates_attack()
         print("✅ test_engine_generates_attack")
         
-        return True
         
     except Exception as e:
         print(f"❌ Function test error: {e}")
         import traceback
         traceback.print_exc()
-        return False
+        raise AssertionError(f"Function test error: {e}") from e
 
 def test_class_instantiation():
     """Test that test classes can be created"""
     try:
-        import test_adversarial
+        try:
+            from tests import test_adversarial
+        except ImportError:
+            import test_adversarial
         
         print("Testing class instantiation...")
         
@@ -80,13 +87,12 @@ def test_class_instantiation():
         poisoning_test.setup_method()
         print("✅ TestPoisoningAttackGenerator with setup")
         
-        return True
         
     except Exception as e:
         print(f"❌ Class test error: {e}")
         import traceback
         traceback.print_exc()
-        return False
+        raise AssertionError(f"Class test error: {e}") from e
 
 def main():
     """Run all tests"""
