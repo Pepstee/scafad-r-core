@@ -31,6 +31,7 @@ import sys
 import time
 import types
 import uuid
+import inspect
 from urllib.parse import urlparse
 
 import pytest
@@ -144,6 +145,8 @@ def make_gateway_config() -> Layer1Config:
 
 def run_async(coro):
     """Run an async coroutine synchronously in a fresh event loop."""
+    if not inspect.isawaitable(coro):
+        return coro
     return asyncio.run(coro)
 
 

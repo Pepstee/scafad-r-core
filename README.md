@@ -8,6 +8,27 @@
 
 > **SCAFAD-R** is a cutting-edge behavioral anomaly detection framework specifically designed for serverless computing environments. It separates benign serverless variance from true behavioral anomalies, survives telemetry dropouts, and produces auditable, MITRE-aligned explanations with measurable operational overhead.
 
+## Current Implementation Status
+
+This repository is the primary SCAFAD dissertation codebase.
+
+- `scafad-r-core` is the canonical implementation trunk.
+- `scafad-delta` is now treated as a Layer 1 source/reference repository rather than a second primary system trunk.
+- The only allowed Layer 0 to Layer 1 boundary is `core/r_core_to_layer1_adapter.py`.
+- The canonical Layer 1 implementation path now lives in `core/layer1_pipeline.py`.
+- A minimal but real Layers 2-6 path now lives in:
+  - `core/layer2_detection_matrix.py`
+  - `core/layer3_trust_fusion.py`
+  - `core/layer4_explainability.py`
+  - `core/layer5_threat_alignment.py`
+  - `core/layer6_feedback_learning.py`
+  - `core/multilayer_pipeline.py`
+
+Supporting baseline documentation:
+
+- `docs/KNOWN_GOOD_BASELINE.md`
+- `docs/LAYER_STATUS.md`
+
 ## 🎯 Key Features
 
 - **🛡️ Resilience-First Architecture**: L0-L6 layered defense with telemetry starvation recovery
@@ -55,6 +76,17 @@ graph TB
     
     A0 --> A1 --> A2a & A2b & A2c & A2d --> A3 --> A4 --> A5 --> A6
 ```
+
+### Canonical Processing Path
+
+The current canonical processing path is:
+
+1. Layer 0 emits a real `TelemetryRecord`
+2. `core/r_core_to_layer1_adapter.py` converts it into the Layer 1 input shape
+3. `core/layer1_pipeline.py` performs canonical Layer 1 processing and emits a `Layer1ProcessedRecord`
+4. `core/multilayer_pipeline.py` carries the record through Layers 2-6
+
+This gives the repository one stable implementation path from Layer 0 through Layer 6, while still preserving legacy and experimental work elsewhere in the tree.
 
 ### Core Components Architecture
 
