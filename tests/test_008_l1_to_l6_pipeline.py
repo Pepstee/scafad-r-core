@@ -127,6 +127,8 @@ def test_008b_benign_record_flows_l1_to_l6_predictably():
         pipeline.process_l0_record(_build_record(benign_payload)),
         analyst_label="benign",
     )
+    payload = result.to_dict()
+    assert payload["layer2"]["trace_id"] == payload["layer1"]["trace_id"]
     assert result.layer4.decision in {"observe", "review"}
     assert result.layer5.campaign_cluster.startswith(result.layer4.decision)
     assert result.layer6 is not None
@@ -146,6 +148,7 @@ def test_008c_anomalous_record_flows_l1_to_l6_predictably():
     assert result.layer4.decision in {"review", "escalate"}
     assert result.layer5.tactics
     assert result.layer6 is not None
+    assert result.layer6.trace_id == result.layer1.trace_id
     assert result.layer6.adjusted_trust >= 0.8
 
 
@@ -162,3 +165,4 @@ def test_008d_threat_alignment_and_feedback_have_stable_contract():
     assert isinstance(result.layer5.campaign_cluster, str)
     assert result.layer6 is not None
     assert result.layer6.feedback_events[0].analyst_label == "true_positive"
+    assert result.to_dict()["layer5"]["trace_id"] == result.layer1.trace_id

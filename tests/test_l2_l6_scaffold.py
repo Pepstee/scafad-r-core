@@ -54,6 +54,8 @@ def test_layer2_detection_matrix_produces_multiple_signals():
     assert len(result.signals) == 4
     assert result.aggregate_score > 0.0
     assert result.anomaly_indicated is True
+    assert result.trace_id
+    assert result.trust_context["source_layer"] == "layer_1"
 
 
 def test_layer3_fusion_uses_trust_weighted_scores():
@@ -62,12 +64,16 @@ def test_layer3_fusion_uses_trust_weighted_scores():
     assert 0.0 <= fusion.fused_score <= 1.0
     assert "rule_chain" in fusion.trust_weights
     assert len(fusion.leading_signals) == 2
+    assert fusion.trace_id == detection.trace_id
+    assert fusion.trust_score_input >= 0.1
 
 
 def test_layer4_explainability_builds_decision_trace():
     detection = MultiVectorDetectionMatrix().analyze(_sample_processed_record())
     fusion = TrustWeightedFusionEngine().fuse(detection)
     trace = ExplainabilityDecisionEngine().build_trace(detection, fusion, redacted_fields=["email"])
+    assert trace.record_id == detection.record_id
+    assert trace.trace_id == detection.trace_id
     assert trace.decision in {"observe", "review", "escalate"}
     assert trace.severity in {"low", "medium", "high"}
     assert trace.redacted_fields == ["email"]
@@ -79,6 +85,8 @@ def test_layer5_threat_alignment_maps_to_tactics():
     fusion = TrustWeightedFusionEngine().fuse(detection)
     trace = ExplainabilityDecisionEngine().build_trace(detection, fusion)
     alignment = ThreatAlignmentEngine().align("memory_spike", trace)
+    assert alignment.record_id == trace.record_id
+    assert alignment.trace_id == trace.trace_id
     assert alignment.tactics
     assert alignment.techniques
     assert alignment.campaign_cluster.startswith(trace.decision)
@@ -90,10 +98,13 @@ def test_layer6_feedback_learning_adjusts_trust():
     fusion = TrustWeightedFusionEngine().fuse(detection)
     trace = ExplainabilityDecisionEngine().build_trace(detection, fusion)
     alignment = ThreatAlignmentEngine().align("memory_spike", trace)
-    state = engine.ingest_feedback("rec-001", "confirmed", alignment)
+    state = engine.ingest_feedback("rec-001", trace.trace_id, "confirmed", alignment)
+    assert state.record_id == "rec-001"
+    assert state.trace_id == trace.trace_id
     assert state.adjusted_trust > 0.7
     assert state.replay_queue_size == 1
     assert state.feedback_events[0].record_id == "rec-001"
+    assert state.feedback_events[0].trace_id == trace.trace_id
 
 
 def test_multilayer_pipeline_chains_l2_to_l6():
@@ -101,10 +112,15 @@ def test_multilayer_pipeline_chains_l2_to_l6():
     result = pipeline.process_record(_sample_processed_record(), analyst_label="confirmed", redacted_fields=["ssn"])
     assert result.layer2.record_id
     assert result.layer1.trace_id
+    assert result.layer2.trace_id == result.layer1.trace_id
+    assert result.layer3.trace_id == result.layer1.trace_id
+    assert result.layer4.trace_id == result.layer1.trace_id
+    assert result.layer5.trace_id == result.layer1.trace_id
     assert result.layer3.fused_score >= 0.0
     assert result.layer4.redacted_fields == ["ssn"]
     assert result.layer5.tactics
     assert result.layer6 is not None
+    assert result.layer6.trace_id == result.layer1.trace_id
     assert result.layer6.replay_queue_size == 1
 
 
@@ -113,3 +129,13 @@ def test_multilayer_pipeline_accepts_legacy_like_dict_envelope():
     result = pipeline.process_record(_legacy_like_record_dict(), analyst_label="confirmed")
     assert result.layer1.record_id == "rec-001"
     assert result.layer2.anomaly_indicated is True
+
+
+def test_multilayer_pipeline_result_is_serializable_contract():
+    pipeline = SCAFADMultilayerPipeline()
+    result = pipeline.process_record(_sample_processed_record(), analyst_label="confirmed")
+    payload = result.to_dict()
+    assert payload["layer1"]["trace_id"] == payload["layer2"]["trace_id"]
+    assert payload["layer2"]["record_id"] == payload["layer3"]["record_id"]
+    assert payload["layer4"]["trace_id"] == payload["layer5"]["trace_id"]
+    assert payload["layer6"]["feedback_events"][0]["trace_id"] == payload["layer1"]["trace_id"]

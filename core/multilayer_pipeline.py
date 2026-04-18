@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
@@ -27,6 +28,16 @@ class MultilayerPipelineResult:
     layer4: Layer4DecisionTrace
     layer5: ThreatAlignmentResult
     layer6: Optional[Layer6FeedbackState]
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "layer1": self.layer1.to_dict(),
+            "layer2": self.layer2.to_dict(),
+            "layer3": self.layer3.to_dict(),
+            "layer4": self.layer4.to_dict(),
+            "layer5": self.layer5.to_dict(),
+            "layer6": None if self.layer6 is None else self.layer6.to_dict(),
+        }
 
 
 class SCAFADMultilayerPipeline:
@@ -78,7 +89,7 @@ class SCAFADMultilayerPipeline:
                 quality_report=quality_report,
                 audit_record=audit_record,
                 trace_id=str(record.get("trace_id", record["record_id"])),
-                trust_context=record.get("trust_context", {}),
+                trust_context=copy.deepcopy(record.get("trust_context", {})),
             )
 
         l2 = self.layer2.analyze(layer1_record)
@@ -89,6 +100,7 @@ class SCAFADMultilayerPipeline:
         if analyst_label is not None:
             l6 = self.layer6.ingest_feedback(
                 record_id=l2.record_id,
+                trace_id=l2.trace_id,
                 analyst_label=analyst_label,
                 threat_alignment=l5,
             )

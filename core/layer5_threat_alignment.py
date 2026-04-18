@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List
+from typing import Any, Dict, List
 
 from core.layer4_explainability import Layer4DecisionTrace
 
@@ -12,9 +12,22 @@ from core.layer4_explainability import Layer4DecisionTrace
 class ThreatAlignmentResult:
     """Threat-alignment output including MITRE-style tactics and grouping."""
 
+    record_id: str
+    trace_id: str
     tactics: List[str] = field(default_factory=list)
     techniques: List[str] = field(default_factory=list)
     campaign_cluster: str = "baseline-observation"
+    alignment_confidence: float = 0.0
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "record_id": self.record_id,
+            "trace_id": self.trace_id,
+            "tactics": list(self.tactics),
+            "techniques": list(self.techniques),
+            "campaign_cluster": self.campaign_cluster,
+            "alignment_confidence": self.alignment_confidence,
+        }
 
 
 class ThreatAlignmentEngine:
@@ -43,9 +56,12 @@ class ThreatAlignmentEngine:
 
         cluster = f"{trace.decision}-{tactics[0]}"
         return ThreatAlignmentResult(
+            record_id=trace.record_id,
+            trace_id=trace.trace_id,
             tactics=tactics,
             techniques=techniques,
             campaign_cluster=cluster,
+            alignment_confidence=round(min(1.0, 0.45 + (0.15 * len(tactics))), 4),
         )
 
 

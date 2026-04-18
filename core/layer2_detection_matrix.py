@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 from dataclasses import dataclass, field
 from typing import Any, Dict, List
 
@@ -17,15 +18,39 @@ class DetectionSignal:
     confidence: float
     rationale: str
 
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "detector_name": self.detector_name,
+            "score": self.score,
+            "confidence": self.confidence,
+            "rationale": self.rationale,
+        }
+
 
 @dataclass
 class Layer2DetectionResult:
     """Aggregated output from the Layer 2 multi-vector detectors."""
 
     record_id: str
+    trace_id: str = ""
+    anomaly_type: str = "benign"
+    execution_phase: str = "unknown"
+    trust_context: Dict[str, Any] = field(default_factory=dict)
     signals: List[DetectionSignal] = field(default_factory=list)
     aggregate_score: float = 0.0
     anomaly_indicated: bool = False
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "record_id": self.record_id,
+            "trace_id": self.trace_id,
+            "anomaly_type": self.anomaly_type,
+            "execution_phase": self.execution_phase,
+            "trust_context": copy.deepcopy(self.trust_context),
+            "signals": [signal.to_dict() for signal in self.signals],
+            "aggregate_score": self.aggregate_score,
+            "anomaly_indicated": self.anomaly_indicated,
+        }
 
 
 class RuleChainEngine:
@@ -125,6 +150,10 @@ class MultiVectorDetectionMatrix:
             aggregate = 0.0
         return Layer2DetectionResult(
             record_id=str(envelope.get("record_id") or envelope.get("event_id") or "unknown"),
+            trace_id=str(envelope.get("trace_id", "")),
+            anomaly_type=str(envelope.get("anomaly_type", "benign")),
+            execution_phase=str(envelope.get("execution_phase", "unknown")),
+            trust_context=copy.deepcopy(envelope.get("trust_context", {})),
             signals=signals,
             aggregate_score=round(aggregate, 4),
             anomaly_indicated=aggregate >= 0.3,
