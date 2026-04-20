@@ -3,9 +3,27 @@
 # This Makefile provides convenient commands for running reproducible
 # SCAFAD experiments using Docker containers.
 
-.PHONY: help build test experiments clean validate quick-test full-test
+.PHONY: help build test experiments clean validate quick-test full-test evaluate
 
+# ---------------------------------------------------------------------------
+# C-5 Evaluation harness — no Docker required
+# ---------------------------------------------------------------------------
+EVAL_OUTPUT_DIR ?= ./evaluation/results
+EVAL_SEED       ?= 42
+SCAFAD_PKG      ?= ./scafad
+
+# Run the full permanent test suite (T-013..T-025) and write a JSON artefact.
+# Exit code 0 iff all 419 tests pass.
+evaluate:
+	@echo "SCAFAD-R Evaluation Harness (C-5)"
+	@echo "=================================="
+	cd $(SCAFAD_PKG) && python3 evaluate_scafad.py \
+		--output-dir ../$(EVAL_OUTPUT_DIR) \
+		--seed $(EVAL_SEED)
+
+# ---------------------------------------------------------------------------
 # Default target
+# ---------------------------------------------------------------------------
 help:
 	@echo "SCAFAD Reproducible Experiments"
 	@echo "==============================="
@@ -284,27 +302,4 @@ aws-experiments: build
 
 # Generate final report
 report:
-	@echo "📋 Generating comprehensive report..."
-	@if [ -d "$(OUTPUT_DIR)" ]; then \
-		python experiments/generate_final_report.py --output-dir $(OUTPUT_DIR); \
-		echo "✅ Report generated: $(OUTPUT_DIR)/reports/"; \
-	else \
-		echo "❌ No results found. Run experiments first."; \
-	fi
-
-# CI/CD pipeline simulation
-ci-test: validate quick-test
-	@echo "🔄 CI/CD pipeline completed successfully"
-
-# Performance benchmarking
-benchmark: build
-	@echo "⏱️  Running performance benchmarks..."
-	docker run --rm \
-		-v $(PWD)/$(OUTPUT_DIR):/scafad/experiments/results \
-		--name $(CONTAINER_NAME)-benchmark \
-		$(IMAGE_NAME):$(DOCKER_TAG) \
-		python experiments/run_reproducible_experiments.py \
-		--experiment-type all \
-		--seed $(SEED) \
-		--quick-mode
-	@echo "📊 Benchmark results in: $(OUTPUT_DIR)/reports/"
+	@echo "📋 Generating comprehe
