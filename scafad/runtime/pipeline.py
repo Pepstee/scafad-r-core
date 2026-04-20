@@ -44,10 +44,12 @@ class SCAFADMultilayerPipeline:
 
     def process_record(
         self,
-        record: Dict[str, Any] | Layer1ProcessedRecord,
-        analyst_label: Optional[str] = None,
-        redacted_fields: Optional[list[str]] = None,
-    ) -> MultilayerPipelineResult:
+        record,
+        analyst_label=None,
+        redacted_fields=None,
+        verbosity="standard",
+        redaction_budget=0,
+    ):
         if isinstance(record, Layer1ProcessedRecord):
             layer1_record = record
         else:
@@ -86,7 +88,12 @@ class SCAFADMultilayerPipeline:
 
         l2 = self.layer2.analyze(layer1_record)
         l3 = self.layer3.fuse(l2)
-        l4 = self.layer4.build_trace(l2, l3, redacted_fields=redacted_fields)
+        l4 = self.layer4.build_trace(
+            l2, l3,
+            verbosity=verbosity,
+            redaction_budget=redaction_budget,
+            redacted_fields=redacted_fields,
+        )
         l5 = self.layer5.align(layer1_record.anomaly_type, l4)
         l6 = None
         if analyst_label is not None:
@@ -107,4 +114,3 @@ class SCAFADMultilayerPipeline:
 
 
 __all__ = ["MultilayerPipelineResult", "SCAFADMultilayerPipeline"]
-

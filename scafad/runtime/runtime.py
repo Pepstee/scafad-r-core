@@ -54,6 +54,8 @@ class SCAFADCanonicalRuntime:
         record: TelemetryRecord,
         analyst_label: Optional[str] = None,
         redacted_fields: Optional[list[str]] = None,
+        verbosity: str = "standard",
+        redaction_budget: int = 0,
     ) -> CanonicalRuntimeResult:
         adapted = self.adapter.adapt(record)
         layer1_record = self.layer1_pipeline.process_adapted_record(adapted)
@@ -61,6 +63,8 @@ class SCAFADCanonicalRuntime:
             layer1_record,
             analyst_label=analyst_label,
             redacted_fields=redacted_fields,
+            verbosity=verbosity,
+            redaction_budget=redaction_budget,
         )
         return CanonicalRuntimeResult(
             layer0_record=record,
@@ -74,12 +78,16 @@ class SCAFADCanonicalRuntime:
         event: Dict[str, Any],
         analyst_label: Optional[str] = None,
         redacted_fields: Optional[list[str]] = None,
+        verbosity: str = "standard",
+        redaction_budget: int = 0,
     ) -> CanonicalRuntimeResult:
         record = self.build_record(event)
         return self.process_record(
             record,
             analyst_label=analyst_label,
             redacted_fields=redacted_fields,
+            verbosity=verbosity,
+            redaction_budget=redaction_budget,
         )
 
     def build_record(self, event: Dict[str, Any]) -> TelemetryRecord:
@@ -147,12 +155,4 @@ class SCAFADCanonicalRuntime:
         for member in AnomalyType:
             if member.value == raw:
                 return member
-        fallback_map = {
-            "none": AnomalyType.BENIGN,
-            "suspicious": AnomalyType.MEMORY_SPIKE,
-            "malicious": AnomalyType.ADVERSARIAL_INJECTION,
-        }
-        return fallback_map.get(raw, AnomalyType.BENIGN)
-
-
-__all__ = ["CanonicalRuntimeResult", "SCAFADCanonicalRuntime"]
+     
