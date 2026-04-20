@@ -20,8 +20,11 @@ import logging
 import time
 import os
 import asyncio
+import warnings
 from typing import Dict, Any, Optional
 import traceback
+
+from layers.runtime import SCAFADCanonicalRuntime
 
 # Configure logging for Lambda
 logger = logging.getLogger()
@@ -125,18 +128,32 @@ def initialize_scafad():
 
 def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
     """
-    Main AWS Lambda handler for SCAFAD
-    
+    Main AWS Lambda handler for SCAFAD.
+
+    Delegates exclusively to SCAFADCanonicalRuntime (WP-1.1, DL-019).
+    The legacy app_main path is no longer used here; see enhanced_lambda_handler
+    for the deprecated alias if needed.
+
     Args:
-        event: Lambda event data
+        event:   Lambda event data
         context: Lambda context object
-        
+
     Returns:
         Response dictionary with SCAFAD analysis results
     """
-    from app_main import lambda_handler as canonical_lambda_handler
-
-    return canonical_lambda_handler(event, context)
+    try:
+        runtime = SCAFADCanonicalRuntime()
+        result = runtime.process_event(event)
+        return {
+            "statusCode": 200,
+            "body": json.dumps(result.to_dict()),
+        }
+    except Exception as exc:  # noqa: BLE001
+        logger.error("lambda_handler: unhandled exception: %s", exc, exc_info=True)
+        return {
+            "statusCode": 500,
+            "body": json.dumps({"error": str(exc)}),
+        }
 
 
 def handle_scheduled_event(event: Dict[str, Any], context) -> Dict[str, Any]:
@@ -471,4 +488,24 @@ if os.getenv("LAMBDA_TASK_ROOT"):  # Only in Lambda environment
 
 
 # Export for testing
+def enhanced_lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
+    """
+    Deprecated alias — forwards to lambda_handler.
+
+    The previous implementation delegated to app_main.lambda_handler (legacy path).
+    Callers should switch to lambda_handler directly, or construct
+    SCAFADCanonicalRuntime themselves.
+
+    .. deprecated::
+        Use ``lambda_handler`` (which routes through SCAFADCanonicalRuntime) instead.
+    """
+    warnings.warn(
+        "enhanced_lambda_handler is deprecated; use lambda_handler which routes "
+        "through SCAFADCanonicalRuntime (WP-1.1, DL-019).",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return lambda_handler(event, context)
+
+
 __all__ = ['lambda_handler', 'initialize_scafad', 'warm_container']
