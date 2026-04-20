@@ -1359,8 +1359,8 @@ class MultiChannelTelemetry:
         
         if priority >= 8:  # High priority - immediate emission
             emission_results = await self._emit_immediate(telemetry)
-        else:  # Normal priority - can be queued
-            emission_results = await self._emit_immediate(telemetry)
+        else:  # Normal priority - route through queue (I-10)
+            emission_results = await self._emit_with_queue(telemetry)
         
         # Analyze results
         for channel_name, result in emission_results.items():
@@ -1388,6 +1388,22 @@ class MultiChannelTelemetry:
             'overall_success': len(successful_channels) > 0
         }
     
+    async def _emit_with_queue(self, telemetry: TelemetryRecord) -> Dict[str, Dict]:
+        """
+        Emit using the priority queue for normal-priority records (I-10).
+
+        Places the record on the emission_queue and processes it, giving the
+        scheduler an opportunity to batch or re-order before committing to channels.
+        Falls back to immediate emission if the queue is unavailable.
+        """
+        try:
+            await self.emission_queue.put((telemetry.get_emission_priority(), telemetry))
+            _, queued_record = await self.emission_queue.get()
+            return await self._emit_immediate(queued_record)
+        except Exception:  # noqa: BLE001
+            # Queue unavailable — degrade gracefully to direct emission
+            return await self._emit_immediate(telemetry)
+
     async def _emit_immediate(self, telemetry: TelemetryRecord) -> Dict[str, Dict]:
         """Emit immediately to all channels with intelligent failover"""
         
@@ -1807,12 +1823,6 @@ class FallbackTelemetryProcessor:
             'emergency_file_exists': self.emergency_file.exists(),
             'emergency_file_size': self.emergency_file.stat().st_size if self.emergency_file.exists() else 0
         }
-    async def _emit_with_queue(self, telemetry: TelemetryRecord) -> Dict[str, Dict]:
-        """Emit using priority queue for better throughput"""
-        
-        # For now, implement as immediate emission
-        # In production, this would use actual queueing
-        return await self._emit_immediate(telemetry)
     
     async def _emit_to_channel_with_timeout(self, channel_name: str, telemetry: TelemetryRecord) -> Dict[str, Any]:
         """Emit to specific channel with timeout and error handling"""
