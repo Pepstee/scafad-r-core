@@ -46,7 +46,16 @@ from enum import Enum
 from typing import Dict, Any, List, Optional
 from dataclasses import asdict
 
-# Import all specialized modules
+# ---------------------------------------------------------------------------
+# Canonical runtime -- always available; required by enhanced_lambda_handler.
+# ---------------------------------------------------------------------------
+from app_config import Layer0Config, validate_environment
+from layers.runtime import SCAFADCanonicalRuntime
+
+# ---------------------------------------------------------------------------
+# Telemetry primitives -- required by Layer0_AdaptiveTelemetryController and
+# the backpressure / fallback paths inside this module.
+# ---------------------------------------------------------------------------
 from app_telemetry import (
     TelemetryRecord,
     MultiChannelTelemetry,
@@ -54,22 +63,12 @@ from app_telemetry import (
     ExecutionPhase,
     TelemetrySource,
 )
-from app_graph import AdvancedInvocationGraphBuilder
-from app_adversarial import AdversarialAnomalyEngine
-from app_provenance import ProvenanceChainTracker
-from app_economic import EconomicAbuseDetector
-from app_silent_failure import SilentFailureAnalyzer
-from app_formal import FormalVerificationEngine
-from app_schema import SchemaEvolutionManager
-from app_config import Layer0Config, validate_environment
 
-# Import Layer 0 core components
-from layer0_signal_negotiation import SignalNegotiator
-from layer0_redundancy_manager import RedundancyManager
-from layer0_sampler import Sampler
-from layer0_fallback_orchestrator import FallbackOrchestrator
-from layer0_runtime_control import RuntimeControlLoop
-from layer0_core import AnomalyDetectionEngine
+# ---------------------------------------------------------------------------
+# Optional heavy subsystem imports -- deferred to avoid blocking the canonical
+# Lambda handler path when graph/adversarial libraries are unavailable.
+# All imports are performed lazily inside Layer0_AdaptiveTelemetryController.
+# ---------------------------------------------------------------------------
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +90,26 @@ class Layer0_AdaptiveTelemetryController:
     
     def __init__(self, config: Layer0Config = None):
         self.config = config or Layer0Config()
-        
+
+        # ------------------------------------------------------------------
+        # Deferred imports: heavy subsystems are only loaded when the
+        # controller is instantiated, keeping the module-level import safe
+        # for the canonical Lambda handler path.
+        # ------------------------------------------------------------------
+        from app_graph import AdvancedInvocationGraphBuilder
+        from app_adversarial import AdversarialAnomalyEngine
+        from app_provenance import ProvenanceChainTracker
+        from app_economic import EconomicAbuseDetector
+        from app_silent_failure import SilentFailureAnalyzer
+        from app_formal import FormalVerificationEngine
+        from app_schema import SchemaEvolutionManager
+        from layer0_signal_negotiation import SignalNegotiator
+        from layer0_redundancy_manager import RedundancyManager
+        from layer0_sampler import Sampler
+        from layer0_fallback_orchestrator import FallbackOrchestrator
+        from layer0_runtime_control import RuntimeControlLoop
+        from layer0_core import AnomalyDetectionEngine
+
         # Initialize Layer 0 core components
         self.signal_negotiator = SignalNegotiator(self.config)
         self.redundancy_manager = RedundancyManager(self.config)
@@ -565,51 +583,143 @@ class Layer0_AdaptiveTelemetryController:
 _layer0_controller = None
 
 def get_layer0_controller() -> Layer0_AdaptiveTelemetryController:
-    """Get or create Layer 0 controller (Lambda container reuse optimization)"""
+    """Get or create Layer 0 controller (Lambda container reuse optimisation)."""
     global _layer0_controller
-    
+
     if _layer0_controller is None:
         config = Layer0Config()
         _layer0_controller = Layer0_AdaptiveTelemetryController(config)
-    
+
     return _layer0_controller
+
+
+_canonical_runtime = None
+
+
+def get_canonical_runtime() -> SCAFADCanonicalRuntime:
+    """Get or create the canonical SCAFAD runtime."""
+    global _canonical_runtime
+
+    if _canonical_runtime is None:
+        _canonical_runtime = SCAFADCanonicalRuntime()
+
+    return _canonical_runtime
+
+
+def _extract_runtime_options(event: Dict[str, Any]) -> Dict[str, Any]:
+    """Extract optional runtime-routing hints from the incoming event."""
+    analyst_label = event.get("analyst_label")
+    redacted_fields = event.get("redacted_fields")
+    if redacted_fields is not None and not isinstance(redacted_fields, list):
+        redacted_fields = [str(redacted_fields)]
+    return {
+        "analyst_label": analyst_label,
+        "redacted_fields": redacted_fields,
+    }
+
+
+def _build_runtime_response(event: Dict[str, Any], runtime_result: Any) -> Dict[str, Any]:
+    """Translate the canonical runtime result into the Lambda response shape."""
+    runtime_payload = runtime_result.to_dict()
+    layer0_record = runtime_payload["layer0_record"]
+    layer1_record = runtime_payload["layer1_record"]
+    multilayer = runtime_payload["multilayer_result"]
+    layer2 = multilayer["layer2"]
+    layer3 = multilayer["layer3"]
+    layer4 = multilayer["layer4"]
+    layer5 = multilayer["layer5"]
+    layer6 = multilayer["layer6"]
+
+    return {
+        "status": "success",
+        "telemetry_id": layer0_record["event_id"],
+        "node_id": layer0_record.get("graph_node_id"),
+        "provenance_id": layer0_record.get("provenance_id"),
+        "anomaly_detected": bool(layer2["anomaly_indicated"]),
+        "economic_risk_score": layer0_record.get("economic_risk_score", 0.0),
+        "completeness_score": layer1_record["quality_report"]["completeness_score"],
+        "emission_success": True,
+        "telemetry": layer0_record,
+        "processing_metrics": {
+            "canonical_runtime": True,
+            "trace_id": layer1_record["trace_id"],
+            "layer2_score": layer2["aggregate_score"],
+            "layer3_score": layer3["fused_score"],
+            "layer4_decision": layer4["decision"],
+            "layer5_cluster": layer5["campaign_cluster"],
+            "layer6_replay_priority": None if layer6 is None else layer6["replay_priority"],
+        },
+        "runtime_result": runtime_payload,
+        "function_name": layer0_record.get("function_id"),
+        "event_source": event.get("source") or event.get("httpMethod") or "direct",
+    }
 
 
 async def enhanced_lambda_handler(event: Dict, context: Any) -> Dict:
     """
-    Enhanced Lambda handler with complete Layer 0 capabilities
-    
-    This is the main entry point for AWS Lambda invocations.
-    Handles all the HTTP response formatting and error handling.
+    Enhanced Lambda handler with complete Layer 0 capabilities.
+
+    The canonical execution path delegates entirely to
+    SCAFADCanonicalRuntime.process_event() and builds the response from
+    CanonicalRuntimeResult.to_dict().  A try/except block catches any runtime
+    failure and returns a JSON-safe fallback response so that Lambda never
+    surfaces an unhandled exception.
     """
-    
-    controller = get_layer0_controller()
-    
-    # Process through Layer 0
-    result = await controller.process_invocation(event, context)
-    
-    # Format HTTP response
-    if result['status'] == 'success':
-        status_code = 202 if result['anomaly_detected'] else 200
+    config = Layer0Config()
+
+    try:
+        runtime = get_canonical_runtime()
+        runtime_options = _extract_runtime_options(event)
+        runtime_result = runtime.process_event(
+            event,
+            analyst_label=runtime_options["analyst_label"],
+            redacted_fields=runtime_options["redacted_fields"],
+        )
+        result = _build_runtime_response(event, runtime_result)
+
+        # Format HTTP response
+        if result['status'] == 'success':
+            status_code = 202 if result['anomaly_detected'] else 200
+            body = {
+                'message': 'SCAFAD Layer 0 processing complete',
+                **result
+            }
+        else:
+            status_code = 206  # Partial content (fallback)
+            body = {
+                'message': 'SCAFAD Layer 0 fallback mode',
+                **result
+            }
+
+        telemetry_id = result.get('telemetry_id', '')
+
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.exception("enhanced_lambda_handler: unhandled exception in canonical runtime")
+
+        # Minimal fallback telemetry so the caller receives a well-formed body
+        fallback_telemetry_id = f"fallback-{int(time.time() * 1000)}"
+        status_code = 500
         body = {
-            'message': 'SCAFAD Layer 0 processing complete',
-            **result
+            'message': 'SCAFAD Layer 0 runtime error -- fallback activated',
+            'status': 'error',
+            'error': str(exc),
+            'telemetry_id': fallback_telemetry_id,
+            'anomaly_detected': False,
+            'telemetry': {
+                'event_id': fallback_telemetry_id,
+                'fallback_mode': True,
+            },
         }
-    else:
-        status_code = 206  # Partial content (fallback)
-        body = {
-            'message': 'SCAFAD Layer 0 fallback mode',
-            **result
-        }
-    
+        telemetry_id = fallback_telemetry_id
+
     return {
         'statusCode': status_code,
         'body': json.dumps(body, default=_json_safe),
         'headers': {
             'Content-Type': 'application/json',
-            'X-SCAFAD-Version': controller.config.version,
+            'X-SCAFAD-Version': config.version,
             'X-SCAFAD-Layer': '0',
-            'X-Telemetry-Id': result.get('telemetry_id', '')
+            'X-Telemetry-Id': telemetry_id,
         }
     }
 
