@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        mode: [full, degraded]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          if [ "${{ matrix.mode }}" = "full" ]; then
+            pip install -r requirements.lock
+          else
+            pip install -r requirements-degraded.lock
+          fi
+
+      - name: AST syntax check
+        run: |
+          python -m ast $(find . -name '*.py' \
+            -not -path '*/legacy/*' \
+            -not -path '*/__pycache__/*' \
+            -not -path '*/pytest-cache-files-*/*') \
+            | tee /dev/null && echo "AST check passed"
+
+      - name: Class-boundary check
+        run: python3 scripts/class_boundary_check.py
+
+      - name: Import audit
+        run: python3 scripts/audit_imports.py
+
+      - name: Tests
+        run: pytest -p no:cacheprovider -q
+
+      - name: Benchmarks
+        run: pytest tests/test_007_performance_benchmarks.py -s -q
+
+      - name: Lint (new files only)
+        run: |
+          python3 -m ruff check \
+            scripts/audit_imports.py \
+            tests/test_lambda_handler_routes_canonical.py \
+            tests/test_app_telemetry_queue_emission.py \
+            tests/contract/test_contract_surface.py

@@ -1,5 +1,11 @@
 # SCAFAD-R: Resilient Serverless Context-Aware Fusion Anomaly Detection Framework
 
+> **Authoritative plan:** see
+> [`../../SCAFAD_MASTER_BLUEPRINT.md`](../../SCAFAD_MASTER_BLUEPRINT.md) (strategic canonical reference) and
+> [`../../SCAFAD_DISSERTATION_BIBLE.md`](../../SCAFAD_DISSERTATION_BIBLE.md) (operational execution reference).
+> All governance, phase roadmap, work packages, and invariants are defined there.
+
+[\![CI](https://github.com/yourusername/scafad-r-core/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/scafad-r-core/actions/workflows/ci.yml)
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/)
 [![AWS SAM](https://img.shields.io/badge/AWS-SAM-orange.svg)](https://aws.amazon.com/serverless/sam/)
@@ -14,15 +20,17 @@ This repository is the primary SCAFAD dissertation codebase.
 
 - `scafad-r-core` is the canonical implementation trunk.
 - `scafad-delta` is now treated as a Layer 1 source/reference repository rather than a second primary system trunk.
-- The only allowed Layer 0 to Layer 1 boundary is `core/r_core_to_layer1_adapter.py`.
-- The canonical Layer 1 implementation path now lives in `core/layer1_pipeline.py`.
-- A minimal but real Layers 2-6 path now lives in:
-  - `core/layer2_detection_matrix.py`
-  - `core/layer3_trust_fusion.py`
-  - `core/layer4_explainability.py`
-  - `core/layer5_threat_alignment.py`
-  - `core/layer6_feedback_learning.py`
-  - `core/multilayer_pipeline.py`
+- The only allowed Layer 0 to Layer 1 boundary is `layers/layer1/adapter.py`.
+- The canonical Layer 1 implementation path now lives in `layers/layer1/pipeline.py`.
+- The repository now uses a module-split architecture under `layers/`:
+  - `layers/layer0/`
+  - `layers/layer1/`
+  - `layers/layer2/`
+  - `layers/layer3/`
+  - `layers/layer4/`
+  - `layers/layer5/`
+  - `layers/layer6/`
+- Legacy `core/` paths are preserved as compatibility shims while the new package layout becomes canonical.
 
 Supporting baseline documentation:
 
@@ -81,10 +89,10 @@ graph TB
 
 The current canonical processing path is:
 
-1. Layer 0 emits a real `TelemetryRecord`
-2. `core/r_core_to_layer1_adapter.py` converts it into the Layer 1 input shape
-3. `core/layer1_pipeline.py` performs canonical Layer 1 processing and emits a `Layer1ProcessedRecord`
-4. `core/multilayer_pipeline.py` carries the record through Layers 2-6
+1. `layers/runtime.py` accepts an event or a real `TelemetryRecord`
+2. `layers/layer1/adapter.py` converts it into the Layer 1 input shape
+3. `layers/layer1/pipeline.py` performs canonical Layer 1 processing and emits a `Layer1ProcessedRecord`
+4. `layers/pipeline.py` carries the record through Layers 2-6
 
 This gives the repository one stable implementation path from Layer 0 through Layer 6, while still preserving legacy and experimental work elsewhere in the tree.
 
@@ -524,13 +532,4 @@ If you use SCAFAD-R in your research, please cite:
 - **📧 Email**: Contact the development team
 
 ### Community Resources
-- **📚 Tutorials**: Step-by-step guides and examples
-- **🎥 Videos**: Video tutorials and demonstrations
-- **📊 Benchmarks**: Performance comparisons and benchmarks
-- **🔬 Research Papers**: Academic publications and research
-
----
-
-**Made with ❤️ for serverless security research**
-
-*SCAFAD-R: Advancing the state-of-the-art in serverless anomaly detection*
+- *
