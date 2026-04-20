@@ -3,7 +3,7 @@
 evaluate_scafad.py — C-5 Reproducible Evaluation Harness for SCAFAD-R
 ======================================================================
 
-Runs the canonical permanent test suite (T-013..T-025) and writes a
+Runs the canonical permanent test suite (T-013..T-026) and writes a
 machine-readable JSON results artefact to evaluation/results/.
 
 Usage:
@@ -106,6 +106,11 @@ TEST_SUITES = [
         "id": "T-025",
         "label": "Runtime E2E Integration (SCAFADCanonicalRuntime L0->L6)",
         "path": "runtime/tests/test_runtime_e2e.py",
+    },
+    {
+        "id": "T-026",
+        "label": "Layer-0 Core Tests (TelemetryRecord, AnomalyDetectionEngine, imports)",
+        "path": "layer0/tests/test_layer0_core.py",
     },
 ]
 
