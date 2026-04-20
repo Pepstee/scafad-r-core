@@ -189,7 +189,10 @@ class MultiVectorDetectionMatrix:
     def analyze(self, record: Dict[str, Any] | Layer1ProcessedRecord) -> Layer2DetectionResult:
         envelope = record.to_dict() if isinstance(record, Layer1ProcessedRecord) else record
         signals = [detector.evaluate(envelope) for detector in self.detectors]
-        aggregate = (sum(signal.score for signal in signals) / len(signals)) if signals else 0.0
+        aggregate = (
+            sum(s.score * s.confidence for s in signals) / sum(s.confidence for s in signals)
+            if signals else 0.0
+        )
         positive_signals = sum(1 for signal in signals if signal.score >= 0.3)
         detector_consensus = round(positive_signals / len(signals), 4) if signals else 0.0
         telemetry = envelope.get("telemetry_data", {}) or {}

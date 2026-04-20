@@ -8,8 +8,12 @@ WP-3.5 / DL-032
 =================
 
 ``DeferredHashingManager`` replaces nominated field values with
-cryptographic digests (SHA-256 or BLAKE2b).  A salt is mixed in to
-prevent rainbow-table attacks.
+cryptographic digests (SHA-256 or BLAKE2b).  A salt is applied using
+cryptographically sound keyed constructions to prevent rainbow-table
+and length-extension attacks:
+
+- SHA-256: HMAC-SHA256(key=salt, msg=value)
+- BLAKE2b: native keyed mode blake2b(data=value, key=salt[:64])
 
 Salt resolution order
 ---------------------
@@ -31,6 +35,7 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import hmac
 import logging
 import os
 from dataclasses import dataclass, field
@@ -94,12 +99,23 @@ def _resolve_salt(explicit: Optional[str]) -> str:
 
 
 def _digest(value: str, salt: str, algorithm: str) -> str:
-    """Return the hex digest of ``salt + value`` using *algorithm*."""
-    payload = (salt + value).encode("utf-8")
+    """Return the keyed digest of *value* under *salt* using *algorithm*.
+
+    SHA-256:  HMAC-SHA256(key=salt, msg=value) — avoids length-extension
+              attacks and is the standard keyed-hash construction for SHA-2.
+    BLAKE2b:  BLAKE2b(data=value, key=salt[:64]) — uses BLAKE2b's native
+              keyed mode (MAC), capped at 64 bytes as required by the spec.
+              Falls back to unkeyed BLAKE2b when salt is empty.
+    """
+    data = value.encode("utf-8")
+    salt_bytes = salt.encode("utf-8")
     if algorithm == "sha256":
-        return hashlib.sha256(payload).hexdigest()
+        return hmac.new(salt_bytes, data, hashlib.sha256).hexdigest()
     if algorithm == "blake2b":
-        return hashlib.blake2b(payload).hexdigest()
+        key = salt_bytes[:64]
+        if key:
+            return hashlib.blake2b(data, key=key).hexdigest()
+        return hashlib.blake2b(data).hexdigest()
     alg_repr = repr(algorithm)
     raise ValueError(f"Unsupported hashing algorithm: {alg_repr}")
 

@@ -282,9 +282,10 @@ class TestMultiVectorMatrix(unittest.TestCase):
         self.assertIn("graph_immunized", names)
         self.assertIn("semantic_deviation", names)
 
-    def test_aggregate_score_is_mean_of_signals(self):
+    def test_aggregate_score_is_confidence_weighted_mean(self):
         result = MATRIX.analyze(_benign_record())
-        expected = sum(s.score for s in result.signals) / 4
+        total_conf = sum(s.confidence for s in result.signals)
+        expected = sum(s.score * s.confidence for s in result.signals) / total_conf
         self.assertAlmostEqual(result.aggregate_score, round(expected, 4), places=4)
 
 

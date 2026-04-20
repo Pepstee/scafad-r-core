@@ -315,5 +315,44 @@ class TestThroughput(unittest.TestCase):
         self.assertLess(elapsed_ms, 1.0, f"Hashing 10 fields took {elapsed_ms:.3f} ms")
 
 
+# ---------------------------------------------------------------------------
+# Cryptographic construction correctness
+# ---------------------------------------------------------------------------
+
+class TestCryptographicConstruction(unittest.TestCase):
+    """Verify the keyed-hash construction, not just the output format."""
+
+    def test_sha256_matches_hmac_construction(self):
+        import hmac as _hmac
+        import hashlib as _hashlib
+        rec = _base_record(function_name="my-lambda")
+        r = DeferredHashingManager(salt="verify-salt").hash_fields(
+            rec, hash_fields=["function_name"], algorithm="sha256"
+        )
+        expected = _hmac.new(
+            b"verify-salt", b"my-lambda", _hashlib.sha256
+        ).hexdigest()
+        self.assertEqual(r.hashed_record["function_name"], expected)
+
+    def test_blake2b_matches_keyed_construction(self):
+        import hashlib as _hashlib
+        rec = _base_record(function_name="my-lambda")
+        r = DeferredHashingManager(salt="verify-salt").hash_fields(
+            rec, hash_fields=["function_name"], algorithm="blake2b"
+        )
+        expected = _hashlib.blake2b(b"my-lambda", key=b"verify-salt").hexdigest()
+        self.assertEqual(r.hashed_record["function_name"], expected)
+
+    def test_sha256_different_from_naive_hash(self):
+        import hashlib as _hashlib
+        rec = _base_record(function_name="my-lambda")
+        r = DeferredHashingManager(salt="s").hash_fields(
+            rec, hash_fields=["function_name"], algorithm="sha256"
+        )
+        naive = _hashlib.sha256(b"smy-lambda").hexdigest()
+        # HMAC must differ from naive salt-prepend
+        self.assertNotEqual(r.hashed_record["function_name"], naive)
+
+
 if __name__ == "__main__":
     unittest.main()
