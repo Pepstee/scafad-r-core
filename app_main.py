@@ -665,6 +665,12 @@ async def enhanced_lambda_handler(event: Dict, context: Any) -> Dict:
     failure and returns a JSON-safe fallback response so that Lambda never
     surfaces an unhandled exception.
     """
+    import warnings
+    warnings.warn(
+        "enhanced_lambda_handler is deprecated; use SCAFADCanonicalRuntime.process_event() directly.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     config = Layer0Config()
 
     try:
@@ -1430,8 +1436,4 @@ if __name__ == "__main__":
                        'app_economic.py', 'app_silent_failure.py', 'app_formal.py', 'app_schema.py', 'app_config.py']:
             print(f"  - {module}")
         print("\\n🎓 Academic Features:")
-        print("  ✅ Comprehensive validation framework")
-        print("  ✅ Performance benchmarking")
-        print("  ✅ Stress testing capabilities")
-        print("  ✅ Automated 95% readiness assessment")
-
+        print("  �
