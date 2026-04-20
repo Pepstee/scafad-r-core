@@ -50,7 +50,14 @@ from dataclasses import asdict
 # Canonical runtime -- always available; required by enhanced_lambda_handler.
 # ---------------------------------------------------------------------------
 from .app_config import Layer0Config, validate_environment
-# from layers.runtime import SCAFADCanonicalRuntime  # updated in runtime/ module
+try:
+    from ..runtime.runtime import SCAFADCanonicalRuntime
+except ImportError:
+    # Graceful fallback when the runtime package is unavailable at import time
+    # (e.g. standalone layer0 testing).  The runtime is only required by the
+    # enhanced_lambda_handler shim and get_canonical_runtime(); direct use of
+    # Layer0_AdaptiveTelemetryController does not need it.
+    SCAFADCanonicalRuntime = None  # type: ignore[assignment,misc]
 
 # ---------------------------------------------------------------------------
 # Telemetry primitives -- required by Layer0_AdaptiveTelemetryController and
@@ -1436,4 +1443,12 @@ if __name__ == "__main__":
                        'app_economic.py', 'app_silent_failure.py', 'app_formal.py', 'app_schema.py', 'app_config.py']:
             print(f"  - {module}")
         print("\\nðŸŽ“ Academic Features:")
-        print("  â
+        print("  - Trust-weighted multi-vector anomaly detection (C-2)")
+        print("  - Preservation-aware data conditioning (C-3)")
+        print("  - Budgeted tiered explainability with redaction (C-4)")
+        print("  - Reproducible evaluation harness with JSON artefact (C-5)")
+        print("  - MITRE ATT&CK threat alignment")
+        print("  - Auditable provenance chain (L0 -> L1 -> ... -> L6)")
+        print()
+        print("Run: python app_main.py --academic-validation")
+        print("     for a full 95%+ academic readiness report.")

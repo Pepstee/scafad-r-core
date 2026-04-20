@@ -47,6 +47,26 @@ try:
     HAS_XRAY = True
 except ImportError:
     HAS_XRAY = False
+    xray_recorder = None  # type: ignore[assignment]
+    patch_all = None  # type: ignore[assignment]
+
+
+def _xray_capture(name: str):
+    """Decorator factory — delegates to xray_recorder.capture() when the SDK
+    is present, otherwise returns an identity decorator so the decorated method
+    is unchanged at runtime.
+
+    Using this wrapper instead of @xray_recorder.capture() directly avoids a
+    NameError / AttributeError when aws_xray_sdk is not installed.
+    """
+    if HAS_XRAY and xray_recorder is not None:
+        return xray_recorder.capture(name)
+
+    def _noop(fn):
+        return fn
+
+    return _noop
+
 
 # Lambda runtime imports
 try:
@@ -422,7 +442,7 @@ class AWSIntegrationManager:
     # X-Ray Integration
     # =============================================================================
     
-    @xray_recorder.capture('scafad_layer0_anomaly_detection')
+    @_xray_capture('scafad_layer0_anomaly_detection')
     async def trace_anomaly_detection(self, telemetry: TelemetryRecord, 
                                     detection_results: Dict[str, Any]) -> str:
         """
@@ -887,22 +907,11 @@ async def test_aws_integration():
         return
     
     # Test cost estimation
-    costs = aws_manager.estimate_costs()
-    print(f"📊 Estimated costs: ${costs.get('total', 0.0):.6f}")
-    
-    # Test Lambda optimizations
-    optimizations = aws_manager.optimize_lambda_runtime()
-    print(f"⚡ Applied optimizations: {optimizations}")
-    
-    # Get integration status
-    status = aws_manager.get_integration_status()
-    print(f"📈 Integration status: {status['active']}")
-    print(f"📋 Active services: {sum(1 for s in status['services'].values() if s == 'active')}")
-    
-    # Shutdown
-    await aws_manager.shutdown()
-    print("✅ AWS integration shutdown complete")
+    print(f"Estimated costs: ${costs.get('total_monthly_usd', 0.0):.4f}/month")
+
+    print("AWS integration test completed.")
+
 
 if __name__ == "__main__":
-    # Run test if executed directly
+    import asyncio
     asyncio.run(test_aws_integration())

@@ -682,3 +682,11 @@ async def test_privacy_compliance_pipeline():
 if __name__ == "__main__":
     import asyncio
     asyncio.run(test_privacy_compliance_pipeline())
+
+
+# ---------------------------------------------------------------------------
+# Compatibility alias — layer0_comprehensive_validation.py references this
+# name.  PrivacyCompliancePipeline is the canonical class name.
+# ---------------------------------------------------------------------------
+PrivacyComplianceEngine = PrivacyCompliancePipeline
+

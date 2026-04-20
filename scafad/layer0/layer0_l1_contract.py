@@ -694,6 +694,15 @@ async def test_l0_l1_contract():
     
     return "L0-L1 Contract Validation test completed successfully"
 
-if __name__ == "__main__":
-    import asyncio
-    asyncio.run(test_l0_l1_contract())
+
+# ---------------------------------------------------------------------------
+# Com
+
+
+# ---------------------------------------------------------------------------
+# Compatibility alias — layer0_comprehensive_validation.py imports this name.
+# The class was originally implemented as ContractValidator.
+# ---------------------------------------------------------------------------
+L0L1ContractValidator = ContractValidator
+
+
