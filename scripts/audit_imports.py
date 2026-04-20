@@ -154,7 +154,7 @@ def _declared_import_names(requirements_path: Path) -> FrozenSet[str]:
         if not line or line.startswith("#"):
             continue
         pkg = line.split("#")[0].strip()
-        for ch in (">=", "<=", "==", "\!=", "~=", ">", "<", "["):
+        for ch in (">=", "<=", "==", r"\!=", "~=", ">", "<", "["):
             pkg = pkg.split(ch)[0].strip()
         pkg_lower = pkg.lower()
         matched = False
