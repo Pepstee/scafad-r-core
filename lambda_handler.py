@@ -134,88 +134,9 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
     Returns:
         Response dictionary with SCAFAD analysis results
     """
-    global SCAFAD_CONTROLLER, INVOCATION_COUNT, CONTAINER_START_TIME, INITIALIZATION_ERROR
-    
-    # Track invocation
-    INVOCATION_COUNT += 1
-    invocation_start_time = time.time()
-    
-    # Determine if this is a cold start
-    is_cold_start = INVOCATION_COUNT == 1
-    container_age = invocation_start_time - CONTAINER_START_TIME
-    
-    # Log basic invocation info
-    logger.info(f"SCAFAD Lambda invocation #{INVOCATION_COUNT}")
-    logger.info(f"Cold start: {is_cold_start}, Container age: {container_age:.3f}s")
-    logger.info(f"Memory limit: {context.memory_limit_in_mb}MB, Remaining time: {context.get_remaining_time_in_millis()}ms")
-    
-    try:
-        # Initialize SCAFAD on first invocation (cold start)
-        if SCAFAD_CONTROLLER is None:
-            if not initialize_scafad():
-                return {
-                    "statusCode": 500,
-                    "body": json.dumps({
-                        "error": "SCAFAD initialization failed",
-                        "details": INITIALIZATION_ERROR,
-                        "invocation_id": context.aws_request_id,
-                        "cold_start": is_cold_start,
-                        "timestamp": invocation_start_time
-                    })
-                }
-        
-        # Handle different event types
-        if event.get("source") == "aws.events":
-            # CloudWatch Events (scheduled or manual)
-            result = handle_scheduled_event(event, context)
-        elif "Records" in event:
-            # SQS, SNS, or other record-based events
-            result = handle_record_events(event["Records"], context)
-        elif event.get("httpMethod"):
-            # API Gateway request
-            result = handle_api_request(event, context)
-        elif event.get("test_mode"):
-            # Test invocation
-            result = handle_test_invocation(event, context)
-        else:
-            # Direct invocation with custom payload
-            result = handle_direct_invocation(event, context)
-        
-        # Add execution metadata
-        execution_time = time.time() - invocation_start_time
-        result.update({
-            "execution_metadata": {
-                "invocation_count": INVOCATION_COUNT,
-                "is_cold_start": is_cold_start,
-                "container_age_seconds": container_age,
-                "execution_time_ms": execution_time * 1000,
-                "memory_limit_mb": context.memory_limit_in_mb,
-                "function_name": context.function_name,
-                "function_version": context.function_version,
-                "aws_request_id": context.aws_request_id,
-                "remaining_time_ms": context.get_remaining_time_in_millis()
-            }
-        })
-        
-        logger.info(f"SCAFAD invocation completed in {execution_time:.3f}s")
-        return result
-        
-    except Exception as e:
-        execution_time = time.time() - invocation_start_time
-        error_msg = f"SCAFAD Lambda handler error: {e}"
-        logger.error(error_msg)
-        logger.error(traceback.format_exc())
-        
-        return {
-            "statusCode": 500,
-            "body": json.dumps({
-                "error": error_msg,
-                "invocation_id": context.aws_request_id,
-                "execution_time_ms": execution_time * 1000,
-                "cold_start": is_cold_start,
-                "timestamp": invocation_start_time
-            })
-        }
+    from app_main import lambda_handler as canonical_lambda_handler
+
+    return canonical_lambda_handler(event, context)
 
 
 def handle_scheduled_event(event: Dict[str, Any], context) -> Dict[str, Any]:
@@ -541,16 +462,7 @@ def warm_container():
     global SCAFAD_CONTROLLER
     
     if SCAFAD_CONTROLLER is None:
-        logger.info("Warming container...")
-        initialize_scafad()
-        
-        # Run a quick self-test to warm up all components
-        if SCAFAD_CONTROLLER:
-            try:
-                asyncio.run(SCAFAD_CONTROLLER.run_self_test())
-                logger.info("✅ Container warmed successfully")
-            except Exception as e:
-                logger.error(f"Container warming failed: {e}")
+        logger.info("Canonical runtime delegation enabled; warm_container skipping legacy self-test path.")
 
 
 # Container warm-up (executes during container initialization)
