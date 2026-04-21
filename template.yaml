@@ -45,7 +45,7 @@ Parameters:
 Globals:
   Function:
     Runtime: python3.11
-    Handler: app_main.lambda_handler
+    Handler: scafad.runtime.lambda_handler.lambda_handler
     Timeout: 300
     MemorySize: 1024
     Architectures:
@@ -387,4 +387,4 @@ Outputs:
   
   DeployCommand:
     Description: Command to deploy to AWS
-    Value: !Sub 'sam deploy --guided --stack-name scafad-layer0-${Stage}'
+    Value: !Sub 'sam deploy --guided --stack-name sc

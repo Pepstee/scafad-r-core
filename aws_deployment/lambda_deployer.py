@@ -235,7 +235,7 @@ class AWSLambdaDeployer:
             "FunctionName": config.function_name,
             "Runtime": config.runtime,
             "Role": role_arn,
-            "Handler": "app_main.lambda_handler",  # Entry point
+            "Handler": "scafad.runtime.lambda_handler.lambda_handler",  # Entry point
             "Code": {"ZipFile": zip_content},
             "Description": "SCAFAD Layer 0 - Serverless Context-Aware Fusion Anomaly Detection",
             "Timeout": config.timeout,
@@ -925,4 +925,4 @@ async def run_self_test():
 
 if __name__ == "__main__":
     import asyncio
-    asyncio.run(run_self_test())
+    asyncio
