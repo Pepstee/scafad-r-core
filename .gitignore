@@ -14,3 +14,6 @@ layers/
 
 # Untracked working-tree copy of the snapshot (source files not in git history)
 legacy/layers-migration-snapshot/
+
+# Generated evaluation output (C-5 harness; make evaluate)
+evaluation/results/
