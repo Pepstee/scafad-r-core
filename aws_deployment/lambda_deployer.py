@@ -925,4 +925,4 @@ async def run_self_test():
 
 if __name__ == "__main__":
     import asyncio
-    asyncio
+    asyncio.run(run_self_test())

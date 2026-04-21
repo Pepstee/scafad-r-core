@@ -387,4 +387,4 @@ Outputs:
   
   DeployCommand:
     Description: Command to deploy to AWS
-    Value: !Sub 'sam deploy --guided --stack-name sc
+    Value: !Sub 'sam deploy --guided --stack-name scafad-layer0-${Stage}'

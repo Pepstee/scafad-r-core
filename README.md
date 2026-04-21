@@ -533,4 +533,11 @@ If you use SCAFAD-R in your research, please cite:
 
 ## 🆘 Support & Community
 
-### Getti
+### Getting Help
+- **📖 Documentation**: Start with the [Architectural Report](Report.txt)
+- **🐛 Issues**: Report bugs via [GitHub Issues](https://github.com/yourusername/scafad-lambda/issues)
+- **💬 Discussions**: Join community discussions
+- **📧 Email**: Contact the development team
+
+### Community Resources
+- *
