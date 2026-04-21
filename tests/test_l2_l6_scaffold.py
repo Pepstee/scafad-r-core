@@ -76,7 +76,9 @@ def test_layer3_fusion_uses_trust_weighted_scores():
 def test_layer4_explainability_builds_decision_trace():
     detection = MultiVectorDetectionMatrix().analyze(_sample_processed_record())
     fusion = TrustWeightedFusionEngine().fuse(detection)
-    trace = ExplainabilityDecisionEngine().build_trace(detection, fusion, redacted_fields=["email"])
+    trace = ExplainabilityDecisionEngine().build_trace(
+        detection, fusion, verbosity="verbose", redacted_fields=["email"]
+    )
     assert trace.record_id == detection.record_id
     assert trace.trace_id == detection.trace_id
     assert trace.decision in {"observe", "review", "escalate"}
@@ -143,7 +145,9 @@ def test_multilayer_pipeline_accepts_legacy_like_dict_envelope():
 
 def test_multilayer_pipeline_result_is_serializable_contract():
     pipeline = SCAFADMultilayerPipeline()
-    result = pipeline.process_record(_sample_processed_record(), analyst_label="confirmed")
+    result = pipeline.process_record(
+        _sample_processed_record(), analyst_label="confirmed", verbosity="verbose"
+    )
     payload = result.to_dict()
     assert payload["layer1"]["trace_id"] == payload["layer2"]["trace_id"]
     assert payload["layer2"]["record_id"] == payload["layer3"]["record_id"]

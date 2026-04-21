@@ -144,6 +144,7 @@ def test_008c_anomalous_record_flows_l1_to_l6_predictably():
     result = higher.process_record(
         pipeline.process_l0_record(_build_record(anomalous_payload)),
         analyst_label="confirmed",
+        verbosity="verbose",
     )
     assert result.layer2.anomaly_indicated is True
     assert result.layer3.fused_score >= 0.3
