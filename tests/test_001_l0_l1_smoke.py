@@ -102,13 +102,13 @@ ValidationStatus       = _delta_validation.ValidationStatus
 # r-core imports
 # =============================================================================
 
-from app_telemetry import (          # noqa: E402
+from layer0.app_telemetry import (          # noqa: E402
     AnomalyType,
     ExecutionPhase,
     TelemetryRecord,
     TelemetrySource,
 )
-from core.r_core_to_layer1_adapter import RCoreToLayer1Adapter  # noqa: E402
+from layer0.adapter import RCoreToLayer1Adapter  # noqa: E402
 
 # =============================================================================
 # Helpers

@@ -185,9 +185,9 @@ except Exception as _exc:
     _DELTA_EXC_MSG = str(_exc)
 
 # r-core imports
-from app_telemetry import AnomalyType, ExecutionPhase, TelemetryRecord, TelemetrySource
-from core.layer1_pipeline import Layer1CanonicalPipeline
-from core.r_core_to_layer1_adapter import RCoreToLayer1Adapter
+from layer0.app_telemetry import AnomalyType, ExecutionPhase, TelemetryRecord, TelemetrySource
+from layer1.pipeline import Layer1CanonicalPipeline
+from layer0.adapter import RCoreToLayer1Adapter
 
 # delta imports
 if _DELTA_AVAILABLE:
