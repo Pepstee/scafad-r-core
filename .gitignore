@@ -7,3 +7,10 @@ tests/pytest-cache-files-*/
 *.log
 .aider*
 telemetry_backup.jsonl
+
+# Working-tree artefact: layers/ migration snapshot (NTFS-locked, cannot delete from Linux)
+# Physical directory preserved at legacy/layers-migration-snapshot/ — see README there.
+layers/
+
+# Untracked working-tree copy of the snapshot (source files not in git history)
+legacy/layers-migration-snapshot/
