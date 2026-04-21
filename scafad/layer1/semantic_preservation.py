@@ -1645,8 +1645,8 @@ class SemanticPreservationOptimizer:
         self.optimization_history = deque(maxlen=1000)
         self.logger = logging.getLogger(__name__ + ".SemanticPreservationOptimizer")
     
-    async def optimize_preservation_strategy(self, original_fingerprint: BehavioralFingerprint,
-                                           target_preservation: float = 0.9) -> Dict[str, Any]:
+    def optimize_preservation_strategy(self, original_fingerprint: BehavioralFingerprint,
+                                      target_preservation: float = 0.9) -> Dict[str, Any]:
         """Optimize preservation strategy for target preservation level"""
         
         optimization_result = {
