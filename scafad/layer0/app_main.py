@@ -292,7 +292,7 @@ class Layer0_AdaptiveTelemetryController:
         """Formal verification and multi-channel emission"""
         
         # Formal verification
-        verification_result = await self.formal_verifier.verify_telemetry_completeness(
+        verification_result = await self.formal_verifier.compute_completeness_score(
             [asdict(telemetry)]
         )
         

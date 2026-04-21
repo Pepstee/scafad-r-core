@@ -975,8 +975,18 @@ class FormalVerificationEngine:
         
         logger.info(f"Advanced formal verification engine initialized for node {self.node_id}")
 
-    async def verify_telemetry_completeness(self, telemetry_trace: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Provide a lightweight completeness check for the live Layer 0 handler."""
+    async def compute_completeness_score(self, telemetry_trace: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Compute a field-presence completeness score for a telemetry trace.
+
+        Returns a dict with keys:
+          overall_score (float 0-1) — mean fraction of required fields present
+          verified (bool)           — True when overall_score >= 0.8
+          issues (list)             — per-record missing-field reports
+
+        Note: this method performs a field-presence ratio check only.
+        Full LTL property verification is available via the `verify_properties`
+        method of this engine (WP-4.3, R-10).
+        """
         if not telemetry_trace:
             return {
                 "overall_score": 0.0,

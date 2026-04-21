@@ -285,7 +285,7 @@ class Layer0_AdaptiveTelemetryController:
         """Formal verification and multi-channel emission"""
         
         # Formal verification
-        verification_result = await self.formal_verifier.verify_telemetry_completeness(
+        verification_result = await self.formal_verifier.compute_completeness_score(
             [asdict(telemetry)]
         )
         
@@ -1436,4 +1436,4 @@ if __name__ == "__main__":
                        'app_economic.py', 'app_silent_failure.py', 'app_formal.py', 'app_schema.py', 'app_config.py']:
             print(f"  - {module}")
         print("\\nðŸŽ“ Academic Features:")
-        print("  â
+        print("  ï¿½
