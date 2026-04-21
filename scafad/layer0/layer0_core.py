@@ -124,6 +124,19 @@ class DetectionResult:
     processing_time_ms: float
     metadata: Dict[str, Any] = field(default_factory=dict)
 
+    def to_dict(self):
+        """Return a JSON-serialisable dict (I-15)."""
+        return {
+            "algorithm_name": self.algorithm_name,
+            "anomaly_detected": bool(self.anomaly_detected),
+            "confidence_score": float(self.confidence_score),
+            "anomaly_type": self.anomaly_type.value if hasattr(self.anomaly_type, "value") else str(self.anomaly_type),
+            "severity": float(self.severity),
+            "explanation": self.explanation,
+            "contributing_features": {k: float(v) if isinstance(v, (int, float)) else str(v) for k, v in self.contributing_features.items()},
+            "processing_time_ms": float(self.processing_time_ms),
+        }
+
 @dataclass
 class FusionResult:
     """Result from multi-vector detection fusion"""
@@ -212,43 +225,37 @@ class AnomalyDetectionEngine:
             logger.warning("⚠️ scikit-learn not available - using statistical fallbacks")
     
     def _register_algorithms(self) -> Dict[str, callable]:
-        """Register all 26 detection algorithms"""
+        """
+        Build the algorithm dispatch table from the DetectorRegistry.
+
+        WP-3.7: Previously a hand-coded dict of bound methods; now delegates
+        to the DetectorRegistry so each of the 26 algorithms lives in its own
+        independently-testable module under scafad/layer0/detectors/.
+
+        The engine shared state (historical_data, ml_models, config) is bound
+        via functools.partial so callers retain the uniform
+        ``fn(telemetry) -> DetectionResult`` signature with no changes to
+        detect_anomalies() or the fusion layer.
+
+        Deferred import prevents circular imports at module load time:
+        layer0_core defines DetectionResult (imported by detector modules);
+        detector modules register themselves with REGISTRY (imported here).
+        """
+        from functools import partial
+        # Deferred import triggers all 26 REGISTRY.register() calls.
+        import layer0.detectors  # noqa: F401
+        from layer0.detectors.registry import REGISTRY
+
         return {
-            # Statistical Detection Algorithms (8)
-            'statistical_outlier': self._detect_statistical_outlier,
-            'isolation_forest': self._detect_isolation_forest,
-            'temporal_deviation': self._detect_temporal_deviation,
-            'correlation_break': self._detect_correlation_break,
-            'seasonal_deviation': self._detect_seasonal_deviation,
-            'trend_change': self._detect_trend_change,
-            'frequency_anomaly': self._detect_frequency_anomaly,
-            'duration_outlier': self._detect_duration_outlier,
-            
-            # Resource-Based Detection Algorithms (6)
-            'resource_spike': self._detect_resource_spike,
-            'memory_leak': self._detect_memory_leak,
-            'cpu_burst': self._detect_cpu_burst,
-            'io_intensive': self._detect_io_intensive,
-            'network_anomaly': self._detect_network_anomaly,
-            'storage_anomaly': self._detect_storage_anomaly,
-            
-            # Execution Pattern Algorithms (6)
-            'execution_pattern': self._detect_execution_pattern,
-            'cold_start': self._detect_cold_start,
-            'timeout_pattern': self._detect_timeout_pattern,
-            'error_clustering': self._detect_error_clustering,
-            'performance_regression': self._detect_performance_regression,
-            'concurrency_anomaly': self._detect_concurrency_anomaly,
-            
-            # Advanced Detection Algorithms (6)
-            'behavioral_drift': self._detect_behavioral_drift,
-            'cascade_failure': self._detect_cascade_failure,
-            'resource_starvation': self._detect_resource_starvation,
-            'security_anomaly': self._detect_security_anomaly,
-            'dependency_failure': self._detect_dependency_failure,
-            'economic_abuse': self._detect_economic_abuse
+            name: partial(
+                fn,
+                historical_data=self.historical_data,
+                ml_models=self.ml_models,
+                config=self.config,
+            )
+            for name, (fn, _weight) in REGISTRY.items()
         }
-    
+
     def detect_anomalies(self, telemetry: TelemetryRecord) -> FusionResult:
         """
         Run complete anomaly detection with multi-vector fusion
