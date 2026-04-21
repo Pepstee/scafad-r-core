@@ -1,6 +1,6 @@
 # Known Good Baseline
 
-Last updated: 2026-04-21
+Last updated: 2026-04-21 (DL-051)
 
 This file records the verified, trustworthy baseline for the SCAFAD-R
 dissertation repository.  Claims here have been confirmed against live
@@ -28,6 +28,35 @@ Verified result (2026-04-21, Johann-direct):
 
 This is the single authoritative baseline.  Do not quote historical
 shell estimates in its place.
+
+### Tier 2 — Standalone cross-layer integration
+
+Command:
+```
+python -m pytest tests/test_008_l1_to_l6_pipeline.py tests/test_l2_l6_scaffold.py -v
+```
+
+Verified result (2026-04-21, Johann-direct):
+```
+12 passed
+```
+
+No external dependencies.  These tests exercise the full L0→L6 pipeline
+end-to-end using canonical bare imports.  They complement the Tier 1
+suite and may be added to CI alongside it.
+
+### Tier 3 — Migration-era cross-repo tests
+
+`tests/test_001_l0_l1_smoke.py` and `tests/test_007_performance_benchmarks.py`
+require `scafad-delta` to be present at `SCAFAD/project/scafad-delta`.
+Without it they fail at collection.  Their canonical equivalents are
+now in `scafad/layer0/tests/` and `scafad/layer1/tests/`.
+
+### Residual warning (known, stable)
+
+One warning per run from `test_layer0_core.py::test_all_modules_importable`:
+`torch_geometric.distributed` DeprecationWarning from a third-party package.
+Not SCAFAD code; acceptable.
 
 ## Canonical Architecture
 
