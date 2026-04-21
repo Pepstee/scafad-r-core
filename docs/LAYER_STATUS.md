@@ -1,73 +1,125 @@
 # Layer Status
 
-This document records the current implementation status of each SCAFAD layer in the primary repository.
+Last updated: 2026-04-21
 
-## Layer 0
+This document records the current implementation status of each SCAFAD-R
+layer.  All canonical paths are under `scafad/`.  References to `layers/`
+or `core/` reflect archival or legacy material only.
 
-- Purpose: telemetry capture, adaptive control, anomaly detection, redundancy, fallback, and runtime coordination
-- Status: implemented and strongly validated
-- Entry point: the Layer 0 family and application modules in the repository root
-- Evidence: the established Layer 0 and Layer 0 to Layer 1 test suites
+## Canonical Architecture Summary
 
-## Layer 1
+The authoritative implementation surface is the `scafad/` package:
 
-- Purpose: validation, sanitisation, privacy filtering, hashing, preservation, quality checks, and audit generation
-- Status: implemented in minimal canonical form inside `r-core`
-- Canonical contract:
-  - input: adapter output from `core/r_core_to_layer1_adapter.py`
-  - output: `Layer1ProcessedRecord` from `core/layer1_pipeline.py`
-- Evidence:
-  - Tests `#001` to `#005`
-  - archived payload pipeline testing
-  - the canonical L1 to L6 integration test added in `#008`
+```
+scafad/
+  layer0/   — Adaptive Telemetry Controller
+  layer1/   — Behavioural Intake Zone
+  layer2/   — Multi-Vector Detection Matrix
+  layer3/   — Trust-Weighted Fusion
+  layer4/   — Explainability and Decision Trace
+  layer5/   — Threat Alignment
+  layer6/   — Feedback and Learning
+  runtime/  — Lambda handler, canonical runtime, multilayer pipeline
+```
 
-## Layer 2
+`layers/` is archived migration residue (gitignored, not in HEAD).
+`core/` contains legacy compatibility shims — do not add new logic there.
 
-- Purpose: multi-vector detection over the canonical Layer 1 record
-- Status: minimal working implementation
-- Contract: `Layer2DetectionResult`
-- Evidence: scaffold tests and the integrated L1 to L6 flow
+## Layer 0 — Adaptive Telemetry Controller
 
-## Layer 3
+- Purpose: telemetry capture, adaptive control, anomaly detection, fallback,
+  runtime coordination; produces `TelemetryRecord` v4.2
+- Status: complete — all 27 modules import cleanly; 100 tests green
+- Canonical location: `scafad/layer0/`
+- Key module: `scafad/layer0/app_telemetry.py` (`TelemetryRecord`)
+- Adapter: `scafad/layer0/adapter.py` (`RCoreToLayer1Adapter`) — the only
+  authorised L0→L1 translation point (I-2)
+- Test suites: T-019 (34), T-026 (50), T-027 (16)
 
-- Purpose: trust-weighted fusion and volatility adjustment
-- Status: minimal working implementation
-- Contract: `Layer3FusionResult`
-- Evidence: scaffold tests and the integrated L1 to L6 flow
+## Layer 1 — Behavioural Intake Zone
 
-## Layer 4
+- Purpose: validation, sanitisation, privacy filtering, deferred hashing,
+  preservation assessment, quality audit; produces `Layer1ProcessedRecord`
+- Status: complete — canonical pipeline implemented and validated
+- Canonical location: `scafad/layer1/`
+- Key module: `scafad/layer1/pipeline.py` (`Layer1CanonicalPipeline`)
+- Test suites: T-013 (36), T-014 (39), T-015 (25), T-016 (36), T-017 (28),
+  T-020 (17)
+- Invariant satisfied: I-5 (L1 never silently drops fields)
 
-- Purpose: explanation summary and analyst-facing decision trace
-- Status: minimal working implementation
-- Contract: `Layer4DecisionTrace`
-- Evidence: scaffold tests and the integrated L1 to L6 flow
+## Layer 2 — Multi-Vector Detection Matrix
 
-## Layer 5
+- Purpose: 26 parallel detectors over the canonical L1 record
+- Status: complete — all 26 detectors implemented and tested
+- Canonical location: `scafad/layer2/`
+- Key module: `scafad/layer2/detection_matrix.py` (`MultiVectorDetectionMatrix`)
+- Test suite: T-018 (37)
 
-- Purpose: MITRE-style threat alignment and campaign grouping
-- Status: minimal working implementation
-- Contract: `ThreatAlignmentResult`
-- Evidence: scaffold tests and the integrated L1 to L6 flow
+## Layer 3 — Trust-Weighted Fusion
 
-## Layer 6
+- Purpose: combine detection signals with learned trust weights; produces
+  fused anomaly score (C-2)
+- Status: complete
+- Canonical location: `scafad/layer3/`
+- Key module: `scafad/layer3/trust_fusion.py` (`TrustWeightedFusionEngine`)
+- Test suite: T-021 (37)
 
-- Purpose: analyst feedback ingestion and trust modulation
-- Status: minimal working implementation
-- Contract: `Layer6FeedbackState`
-- Evidence: scaffold tests and the integrated L1 to L6 flow
+## Layer 4 — Explainability and Decision Trace
+
+- Purpose: tiered rationale generation with redaction budget; terse /
+  standard / verbose modes (C-4)
+- Status: complete
+- Canonical location: `scafad/layer4/`
+- Key module: `scafad/layer4/explainability.py` (`ExplainabilityDecisionEngine`)
+- Test suite: T-022 (36)
+
+## Layer 5 — Threat Alignment
+
+- Purpose: MITRE ATT&CK mapping and campaign clustering
+- Status: complete
+- Canonical location: `scafad/layer5/`
+- Key module: `scafad/layer5/threat_alignment.py` (`ThreatAlignmentEngine`)
+- Test suite: T-023 (28)
+
+## Layer 6 — Feedback and Learning
+
+- Purpose: analyst label ingestion, trust modulation, contrastive replay
+- Status: complete
+- Canonical location: `scafad/layer6/`
+- Key module: `scafad/layer6/feedback_learning.py` (`FeedbackLearningEngine`)
+- Test suite: T-024 (29)
+
+## Runtime
+
+- Purpose: Lambda handler, canonical runtime orchestration (L0→L6),
+  multilayer pipeline coordination
+- Status: complete — I-1 satisfied (single entrypoint)
+- Canonical location: `scafad/runtime/`
+- Lambda handler: `scafad/runtime/lambda_handler.py`
+  (`scafad.runtime.lambda_handler.lambda_handler`)
+- Canonical runtime: `scafad/runtime/runtime.py` (`SCAFADCanonicalRuntime`)
+- Test suite: T-025 (37 E2E tests)
 
 ## Evaluation Matrix
 
-| Claim | Current Evidence |
-|---|---|
-| Layer 0 to Layer 1 handoff works | Tests `#001`, contract tests, archived payload path |
-| Layer 1 canonical path works | Tests `#002` to `#005`, canonical pipeline in `core/layer1_pipeline.py` |
-| Higher layers are concrete and testable | `tests/test_l2_l6_scaffold.py` |
-| Full minimal L1 to L6 path works | `tests/test_008_l1_to_l6_pipeline.py` |
+| Claim | Evidence | Status |
+|---|---|---|
+| L0 produces valid TelemetryRecord | T-026, T-027 | ✓ verified |
+| L0→L1 adapter is the only translation point | T-019, I-2 | ✓ verified |
+| L1 validates and sanitises without silent drops | T-013..T-017, T-020, I-5 | ✓ verified |
+| L2 runs 26 detectors | T-018 | ✓ verified |
+| L3 trust-weighted fusion produces fused score | T-021 | ✓ verified |
+| L4 tiered explainability with budget control | T-022 | ✓ verified |
+| L5 MITRE ATT&CK alignment | T-023 | ✓ verified |
+| L6 feedback modulates trust | T-024 | ✓ verified |
+| Full L0→L6 E2E pipeline works | T-025 | ✓ verified |
+| Single Lambda entrypoint | I-1, DL-039 | ✓ verified |
+| `python -m pytest scafad -q` green | 485 passed, 1 warning | ✓ Johann-verified |
 
-## Future Work
+## Non-Canonical Surfaces (do not import from these)
 
-- replace remaining lightweight heuristics with stronger research implementations
-- consolidate any duplicate Layer 1 logic still living only in tests
-- reduce legacy clutter in the repository root and archive area
-- align the root README more fully with the final dissertation narrative
+| Path | Status | Notes |
+|---|---|---|
+| `layers/` | Gitignored NTFS residue | Archived to `legacy/layers-migration-snapshot/` |
+| `core/` | Legacy shims | Modified in working tree; do not add logic |
+| `legacy/root-flat-files/` | Archival | Flat-root era |

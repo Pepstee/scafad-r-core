@@ -1,47 +1,100 @@
 # Known Good Baseline
 
-This file records the current practical checkpoints used to measure progress in the primary dissertation repository.
+Last updated: 2026-04-21
+
+This file records the verified, trustworthy baseline for the SCAFAD-R
+dissertation repository.  Claims here have been confirmed against live
+repo state — not inferred from session summaries.
 
 ## Primary Repository
 
-- Primary implementation repo: `scafad-r-core`
-- Reference Layer 1 donor repo: `scafad-delta`
+- Repo: `scafad-r-core`
+  (`C:\Users\Gutua\OneDrive\Documents\SCAFAD\project\scafad-r-core`)
+- Reference donor repo: `scafad-delta` (Layer 1 source, not a runtime trunk)
+- Governing documents: `SCAFAD_MASTER_BLUEPRINT.md` (strategic),
+  `SCAFAD_DISSERTATION_BIBLE.md` (operational) — both in `SCAFAD/`
 
-## Stable Reference Checkpoints
+## Verified Test Baseline
 
-- `scafad-r-core` clean committed baseline before the current working changes:
-  - `3928680` — `fix(tests): Phase 1.2 — 121/121 tests green baseline`
-- `scafad-delta` latest Codex compatibility checkpoint:
-  - `7ef9433` — `fix(delta): expand core compatibility baseline for tests`
+Command:
+```
+python -m pytest scafad -q
+```
 
-## Canonical Active Test Baseline
+Verified result (2026-04-21, Johann-direct):
+```
+485 passed, 1 warning
+```
 
-The active baseline is defined as:
+This is the single authoritative baseline.  Do not quote historical
+shell estimates in its place.
 
-- Layer 0 to Layer 1 contract and smoke tests
-- Layer 1 milestone tests `#001` to `#005`
-- E2E and benchmark suites `#006` and `#007`
-- the broader repo-wide regression baseline that was previously confirmed green
+## Canonical Architecture
 
-## Current Repository Reality
+| Surface | Role |
+|---|---|
+| `scafad/` | **Canonical implementation** — Layers 0–6 and runtime |
+| `scafad/layer0/` – `scafad/layer6/` | Layer implementations |
+| `scafad/runtime/` | Lambda handler, canonical runtime, multilayer pipeline |
+| `legacy/root-flat-files/` | Archival — flat-root era, not active runtime |
+| `legacy/layers-migration-snapshot/` | Archival — migration intermediate, not active |
+| `layers/` | NTFS working-tree residue, gitignored, not in HEAD after DL-038 |
+| `core/` | Legacy compatibility shims — do not add new logic here |
 
-The current `scafad-r-core` working tree contains in-progress file churn around:
+## Lambda Deployment Target
 
-- `tests/test_005_archived_dataset_pipeline.py`
-- `tests/test_006_e2e_integration.py`
-- `tests/test_007_performance_benchmarks.py`
-- archived payload files
-- `app_adversarial.py`
+```
+Handler: scafad.runtime.lambda_handler.lambda_handler
+File:    scafad/runtime/lambda_handler.py
+Runtime: SCAFADCanonicalRuntime (scafad/runtime/runtime.py)
+```
 
-Those files should be treated as active work rather than discarded clutter.
+## Canonical Test Set (T-013..T-028)
 
-## Canonical Architectural Rule
+All 485 tests live under `scafad/`:
 
-The only allowed Layer 0 to Layer 1 handoff boundary is:
+| Suite | File | Tests |
+|---|---|---|
+| T-013 | `scafad/layer1/tests/test_layer1_validation.py` | 36 |
+| T-014 | `scafad/layer1/tests/test_layer1_preservation.py` | 39 |
+| T-015 | `scafad/layer1/tests/test_layer1_privacy.py` | 25 |
+| T-016 | `scafad/layer1/tests/test_layer1_sanitisation.py` | 36 |
+| T-017 | `scafad/layer1/tests/test_layer1_hashing.py` | 28 |
+| T-018 | `scafad/layer2/tests/test_layer2_detection.py` | 37 |
+| T-019 | `scafad/layer0/tests/test_layer0_adapter.py` | 34 |
+| T-020 | `scafad/layer1/tests/test_layer1_extended.py` | 17 |
+| T-021 | `scafad/layer3/tests/test_layer3_fusion.py` | 37 |
+| T-022 | `scafad/layer4/tests/test_layer4_explainability.py` | 36 |
+| T-023 | `scafad/layer5/tests/test_layer5_threat.py` | 28 |
+| T-024 | `scafad/layer6/tests/test_layer6_feedback.py` | 29 |
+| T-025 | `scafad/runtime/tests/test_runtime_e2e.py` | 37 |
+| T-026 | `scafad/layer0/tests/test_layer0_core.py` | 50 |
+| T-027 | `scafad/layer0/tests/test_layer0_detectors.py` | 16 |
+| T-028 | `scafad/tests/formal/test_completeness_score.py` | 17 |
 
-- `core/r_core_to_layer1_adapter.py`
+Separate canonical runtime-entry tests (under `tests/`):
+- `tests/test_009_canonical_runtime.py`
+- `tests/test_010_entrypoint_convergence.py`
+- `tests/test_lambda_handler_routes_canonical.py`
 
-The canonical Layer 1 processed-record contract and higher-layer path now live in:
+## Key Commits (Phase 3–4)
 
-- `core/layer1_pipeline.py`
-- `core/multilayer_pipeline.py`
+| Commit | Label | Summary |
+|---|---|---|
+| `43e5294` | DL-039 | Single Lambda entrypoint — I-1 satisfied |
+| `ec350fa` | DL-040 | Namespace-alias hook; T-012 ghost imports fixed |
+| `9a9c025` | DL-041 | `scafad/conftest.py` + pythonpath — 15 bare-import errors fixed |
+| `8af8016` | DL-042 | Remove spurious async from SemanticPreservationOptimizer |
+| `9020dd5` | DL-043 | Archive `layers/` snapshot; `.gitignore` updated |
+| `4a8b06c` | DL-044 | Remove all tracked `__pycache__` entries from tree |
+
+Note: `4de8542` is also labelled DL-040 (archival commit) — numbering drift,
+recorded as a known issue.
+
+## Outstanding Before Phase 4
+
+- Windows-side: delete `layers\`, untracked scratch files (`orchestrator.py`,
+  `repo_tree.txt`, `tests\conftest_probe.py`, etc.)
+- Step 3 docs reconciliation (this file + `LAYER_STATUS.md` + `README.md`)
+- Step 4 root clutter triage
+- WP-4.4: KMS key manager

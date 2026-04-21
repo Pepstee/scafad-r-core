@@ -16,21 +16,29 @@
 
 ## Current Implementation Status
 
-This repository is the primary SCAFAD dissertation codebase.
+This repository is the primary SCAFAD-R dissertation codebase.
 
-- `scafad-r-core` is the canonical implementation trunk.
-- `scafad-delta` is now treated as a Layer 1 source/reference repository rather than a second primary system trunk.
-- The only allowed Layer 0 to Layer 1 boundary is `layers/layer1/adapter.py`.
-- The canonical Layer 1 implementation path now lives in `layers/layer1/pipeline.py`.
-- The repository now uses a module-split architecture under `layers/`:
-  - `layers/layer0/`
-  - `layers/layer1/`
-  - `layers/layer2/`
-  - `layers/layer3/`
-  - `layers/layer4/`
-  - `layers/layer5/`
-  - `layers/layer6/`
-- Legacy `core/` paths are preserved as compatibility shims while the new package layout becomes canonical.
+**Canonical implementation surface:** `scafad/` — Layers 0–6 and runtime.
+
+```
+scafad/
+  layer0/   — Adaptive Telemetry Controller (TelemetryRecord v4.2)
+  layer1/   — Behavioural Intake Zone (Layer1ProcessedRecord)
+  layer2/   — Multi-Vector Detection Matrix (26 detectors)
+  layer3/   — Trust-Weighted Fusion
+  layer4/   — Explainability and Decision Trace (tiered, budget-controlled)
+  layer5/   — Threat Alignment (MITRE ATT&CK)
+  layer6/   — Feedback and Learning
+  runtime/  — Lambda handler + SCAFADCanonicalRuntime
+```
+
+- Lambda handler: `scafad.runtime.lambda_handler.lambda_handler`
+- L0→L1 adapter: `scafad/layer0/adapter.py` (only authorised translation point)
+- `scafad-delta` is a Layer 1 donor repo only — not a runtime trunk
+- `layers/` is archived migration residue (gitignored, not active)
+- `core/` contains legacy shims — do not add new logic there
+
+Verified baseline: `python -m pytest scafad -q` → **485 passed, 1 warning**
 
 Supporting baseline documentation:
 
@@ -525,11 +533,4 @@ If you use SCAFAD-R in your research, please cite:
 
 ## 🆘 Support & Community
 
-### Getting Help
-- **📖 Documentation**: Start with the [Architectural Report](Report.txt)
-- **🐛 Issues**: Report bugs via [GitHub Issues](https://github.com/yourusername/scafad-lambda/issues)
-- **💬 Discussions**: Join community discussions
-- **📧 Email**: Contact the development team
-
-### Community Resources
-- *
+### Getti
