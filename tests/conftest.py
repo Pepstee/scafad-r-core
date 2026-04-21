@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+import importlib
+import importlib.abc
+import importlib.machinery
 import inspect
 import sys
 from pathlib import Path
@@ -23,6 +26,87 @@ if str(SCAFAD_PKG) not in sys.path:
     sys.path.insert(1, str(SCAFAD_PKG))
 
 
+# ---------------------------------------------------------------------------
+# Namespace-alias hook: prevent dual module identity (DL-040)
+# ---------------------------------------------------------------------------
+# When both repo root AND scafad/ are on sys.path, Python can load the same
+# source file under two keys — e.g. `layer0.app_telemetry` and
+# `scafad.layer0.app_telemetry` — producing two distinct class objects.
+# isinstance() checks across that boundary fail even though the class name
+# and definition are identical.  This finder ensures `scafad.layerX.*`
+# imports always resolve to the same module object as the bare `layerX.*`
+# counterpart (bare = authoritative, scafad.* = transparent alias).
+
+class _AliasLoader(importlib.abc.Loader):
+    """Return an already-initialised module unchanged."""
+
+    def __init__(self, module: object) -> None:
+        self._module = module
+
+    def create_module(self, spec: importlib.machinery.ModuleSpec) -> object:  # noqa: ARG002
+        return self._module
+
+    def exec_module(self, module: object) -> None:  # noqa: ARG002
+        pass  # Already fully initialised as the bare module.
+
+
+class _ScafadNamespaceAlias(importlib.abc.MetaPathFinder):
+    """Redirect ``scafad.layerX[.submod]`` → bare ``layerX[.submod]``.
+
+    Installed once into sys.meta_path[0] before any test import fires.
+    The guard ensures idempotent installation across both conftest files
+    (DL-040).
+    """
+
+    _IS_ALIAS_HOOK = True  # sentinel for idempotency guard
+    _PREFIX = "scafad."
+    _LAYERS = frozenset(
+        ["layer0", "layer1", "layer2", "layer3",
+         "layer4", "layer5", "layer6", "runtime"]
+    )
+
+    def find_spec(
+        self,
+        fullname: str,
+        path: object,  # noqa: ARG002
+        target: object = None,  # noqa: ARG002
+    ) -> importlib.machinery.ModuleSpec | None:
+        if not fullname.startswith(self._PREFIX):
+            return None
+        rest = fullname[len(self._PREFIX):]   # e.g. "layer0" or "layer0.app_telemetry"
+        top_layer = rest.split(".")[0]
+        if top_layer not in self._LAYERS:
+            return None
+        if fullname in sys.modules:
+            return None  # already aliased
+
+        # Ensure the bare module is present.
+        if rest not in sys.modules:
+            try:
+                importlib.import_module(rest)
+            except ImportError:
+                return None
+
+        bare_mod = sys.modules.get(rest)
+        if bare_mod is None:
+            return None
+
+        # Register the alias immediately so dotted sub-imports also resolve.
+        sys.modules[fullname] = bare_mod
+        spec = importlib.machinery.ModuleSpec(fullname, _AliasLoader(bare_mod))
+        spec.submodule_search_locations = getattr(bare_mod, "__path__", None)
+        return spec
+
+
+# Install once; the sentinel lets both conftest files call this safely.
+if not any(getattr(f, "_IS_ALIAS_HOOK", False) for f in sys.meta_path):
+    sys.meta_path.insert(0, _ScafadNamespaceAlias())
+
+
+# ---------------------------------------------------------------------------
+# Asyncio hook for historical tests that use @pytest.mark.asyncio
+# ---------------------------------------------------------------------------
+
 @pytest.hookimpl(tryfirst=True)
 def pytest_pyfunc_call(pyfuncitem: pytest.Function) -> bool | None:
     """Execute asyncio-marked coroutine tests without pytest-asyncio.
@@ -39,8 +123,6 @@ def pytest_pyfunc_call(pyfuncitem: pytest.Function) -> bool | None:
     marker = pyfuncitem.get_closest_marker("asyncio")
 
     if not inspect.iscoroutinefunction(test_func):
-        # Respect the historical marker behaviour so that non-async tests keep
-        # using the default pytest execution path.
         if marker is None:
             return None
         return None

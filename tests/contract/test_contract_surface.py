@@ -11,11 +11,12 @@ Invariant I-15:
     key requires a Decision Log entry.
 
 Public dataclasses covered:
-    L0  -- TelemetryRecord          (app_telemetry.py)
-    L1  -- Layer1ProcessedRecord    (layers/layer1/pipeline.py)
-    RT  -- CanonicalRuntimeResult   (layers/runtime.py)
+    L0  -- TelemetryRecord          (layer0/app_telemetry.py)
+    L1  -- Layer1ProcessedRecord    (layer1/pipeline.py)
+    RT  -- CanonicalRuntimeResult   (runtime/runtime.py)
 
 DL-026: T-012 enters permanent set (Phase 2, WP-2.9, 2026-04-20).
+DL-040: imports updated to canonical scafad/ package paths.
 """
 
 from __future__ import annotations
@@ -30,7 +31,7 @@ import unittest
 # ---------------------------------------------------------------------------
 
 def _make_telemetry_record():
-    from app_telemetry import (
+    from layer0.app_telemetry import (
         AnomalyType, ExecutionPhase, TelemetryRecord, TelemetrySource,
     )
     return TelemetryRecord(
@@ -50,15 +51,15 @@ def _make_telemetry_record():
 
 
 def _make_layer1_processed_record():
-    from layers.layer1.adapter import RCoreToLayer1Adapter
-    from layers.layer1.pipeline import Layer1CanonicalPipeline
+    from layer0.adapter import RCoreToLayer1Adapter
+    from layer1.pipeline import Layer1CanonicalPipeline
     record = _make_telemetry_record()
     adapted = RCoreToLayer1Adapter().adapt(record)
     return Layer1CanonicalPipeline().process_adapted_record(adapted)
 
 
 def _make_canonical_runtime_result():
-    from layers.runtime import SCAFADCanonicalRuntime
+    from runtime.runtime import SCAFADCanonicalRuntime
     runtime = SCAFADCanonicalRuntime()
     event = {
         "event_id": "t012-rt-001",
