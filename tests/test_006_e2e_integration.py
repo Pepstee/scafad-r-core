@@ -209,8 +209,8 @@ except Exception as _exc:
 
 # r-core imports
 from app_telemetry import AnomalyType, ExecutionPhase, TelemetryRecord, TelemetrySource
-from core.layer1_pipeline import Layer1CanonicalPipeline
-from core.r_core_to_layer1_adapter import RCoreToLayer1Adapter
+from layer1.pipeline import Layer1CanonicalPipeline  # canonical path (WP-3.9)
+from layer0.adapter import RCoreToLayer1Adapter  # canonical path (WP-3.9)
 
 # delta imports (only after successful load)
 if _DELTA_AVAILABLE:
