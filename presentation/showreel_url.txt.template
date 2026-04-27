@@ -1,0 +1,4 @@
+# SCAFAD showreel external URL — rename this file to showreel_url.txt and replace
+# the line below with the single HTTPS URL where the recording is hosted.
+# Format: one line, HTTPS URL only, no trailing whitespace or comments.
+https://example.com/path/to/scafad-showreel.mp4

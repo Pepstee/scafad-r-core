@@ -53,7 +53,8 @@ try:
     from sklearn.ensemble import IsolationForest
     from sklearn.svm import OneClassSVM
     from sklearn.neighbors import LocalOutlierFactor
-    from sklearn.cluster import DBSCAN
+    from sklearn.cluster import DBSCAN, KMeans
+    from sklearn.covariance import EllipticEnvelope
     from sklearn.preprocessing import StandardScaler, MinMaxScaler
     from sklearn.decomposition import PCA
     from sklearn.metrics import confusion_matrix, classification_report, roc_auc_score
@@ -699,6 +700,237 @@ class MovingAverageDetector(BaseAnomalyDetector):
         )
 
 
+class EllipticEnvelopeDetector(BaseAnomalyDetector):
+    """Elliptic Envelope (robust covariance estimation) anomaly detection.
+
+    Fits a multivariate Gaussian distribution to the training data using
+    robust covariance estimation (Minimum Covariance Determinant).  Points
+    with a large Mahalanobis distance from the fitted distribution are
+    flagged as anomalies.
+
+    Academic Reference:
+    - "A Fast Algorithm for the Minimum Covariance Determinant Estimator"
+      (Rousseeuw & Van Driessen, 1999)
+    """
+
+    def __init__(self, contamination: float = 0.1):
+        """Initialise the detector.
+
+        Parameters
+        ----------
+        contamination:
+            Expected proportion of outliers in the *training* set.  In
+            one-class learning the training set is benign-only, so a value
+            of 0.10 is a conservative upper bound that avoids over-tightening
+            the decision boundary.
+        """
+        super().__init__("Elliptic Envelope", BaselineType.CLASSICAL_ML)
+        self.contamination = contamination
+        self.model: Optional[Any] = None
+
+    def fit(self, X: np.ndarray, feature_names: List[str] = None) -> None:
+        """Fit the robust covariance model on normal (benign) data.
+
+        Parameters
+        ----------
+        X:
+            Feature matrix of shape (n_samples, n_features) — benign only.
+        feature_names:
+            Optional list of feature names for diagnostics.
+        """
+        if not SKLEARN_AVAILABLE:
+            raise ImportError("scikit-learn required for EllipticEnvelope")
+
+        self.model = EllipticEnvelope(
+            contamination=self.contamination,
+            random_state=42,
+        )
+
+        self.scaler = StandardScaler()
+        X_scaled = self.scaler.fit_transform(X)
+
+        self.model.fit(X_scaled)
+        self.feature_names = feature_names or [f"feature_{i}" for i in range(X.shape[1])]
+        self.is_trained = True
+
+    def predict(self, X: np.ndarray) -> "BaselineResult":
+        """Predict anomalies using Mahalanobis distance from the fitted Gaussian.
+
+        Parameters
+        ----------
+        X:
+            Feature matrix of shape (n_samples, n_features).
+
+        Returns
+        -------
+        BaselineResult with normalised anomaly scores and binary predictions.
+        """
+        if not self.is_trained:
+            raise ValueError("Detector must be fitted before prediction")
+
+        start_time = time.time()
+
+        X_scaled = self.scaler.transform(X)
+
+        # decision_function returns positive for inliers, negative for outliers.
+        # Negate so that higher score = more anomalous.
+        raw_scores = -self.model.decision_function(X_scaled)
+
+        # Normalise to [0, 1]
+        min_s, max_s = float(np.min(raw_scores)), float(np.max(raw_scores))
+        if max_s > min_s:
+            anomaly_scores = (raw_scores - min_s) / (max_s - min_s)
+        else:
+            anomaly_scores = np.zeros_like(raw_scores)
+
+        # Binary labels: sklearn returns +1 for inliers, -1 for outliers.
+        predictions = self.model.predict(X_scaled)
+        anomaly_predictions = (predictions == -1).astype(int)
+
+        processing_time = time.time() - start_time
+
+        return BaselineResult(
+            detector_name=self.name,
+            baseline_type=self.baseline_type,
+            anomaly_scores=anomaly_scores,
+            anomaly_predictions=anomaly_predictions,
+            detection_threshold=0.0,   # governed by contamination parameter
+            processing_time=processing_time,
+            model_parameters={"contamination": self.contamination},
+        )
+
+
+class KMeansDetector(BaseAnomalyDetector):
+    """KMeans clustering-based anomaly detection.
+
+    Trains KMeans on benign data to learn the typical behaviour clusters.
+    Anomaly score for a test point is its Euclidean distance to the nearest
+    cluster centroid in the standardised feature space.  Points that fall
+    far from all centroids are likely anomalous.
+
+    The decision threshold is set to ``mean + threshold_std_multiplier * std``
+    of the centroid distances observed on the *training* data.
+    """
+
+    def __init__(self, n_clusters: int = 5, threshold_std_multiplier: float = 2.0):
+        """Initialise the detector.
+
+        Parameters
+        ----------
+        n_clusters:
+            Number of KMeans clusters.  Represents the expected number of
+            distinct benign behaviour modes in the telemetry data.
+        threshold_std_multiplier:
+            How many standard deviations above the training-set mean distance
+            the anomaly decision threshold is placed.
+        """
+        super().__init__("KMeans", BaselineType.CLASSICAL_ML)
+        self.n_clusters = n_clusters
+        self.threshold_std_multiplier = threshold_std_multiplier
+        self.model: Optional[Any] = None
+        self.threshold_: float = 0.0
+
+    def _distances_to_nearest_centroid(self, X_scaled: np.ndarray) -> np.ndarray:
+        """Compute minimum Euclidean distance from each point to its nearest centroid.
+
+        Parameters
+        ----------
+        X_scaled:
+            Standardised feature matrix, shape (n_samples, n_features).
+
+        Returns
+        -------
+        ndarray of shape (n_samples,) with per-point minimum distances.
+        """
+        centroids = self.model.cluster_centers_          # (k, n_features)
+        # Broadcast subtraction: (n_samples, 1, n_features) - (1, k, n_features)
+        diff = X_scaled[:, np.newaxis, :] - centroids[np.newaxis, :, :]
+        dist_matrix = np.sqrt((diff ** 2).sum(axis=2))   # (n_samples, k)
+        return dist_matrix.min(axis=1)                   # (n_samples,)
+
+    def fit(self, X: np.ndarray, feature_names: List[str] = None) -> None:
+        """Fit KMeans clusters on normal (benign) data and calibrate threshold.
+
+        Parameters
+        ----------
+        X:
+            Feature matrix of shape (n_samples, n_features) — benign only.
+        feature_names:
+            Optional list of feature names for diagnostics.
+        """
+        if not SKLEARN_AVAILABLE:
+            raise ImportError("scikit-learn required for KMeans")
+
+        # Cap n_clusters to the number of available training samples.
+        n_clusters = min(self.n_clusters, len(X))
+
+        self.model = KMeans(
+            n_clusters=n_clusters,
+            random_state=42,
+            n_init=10,
+        )
+
+        self.scaler = StandardScaler()
+        X_scaled = self.scaler.fit_transform(X)
+
+        self.model.fit(X_scaled)
+
+        # Calibrate threshold from training-set distances.
+        train_distances = self._distances_to_nearest_centroid(X_scaled)
+        self.threshold_ = float(
+            np.mean(train_distances)
+            + self.threshold_std_multiplier * np.std(train_distances)
+        )
+
+        self.feature_names = feature_names or [f"feature_{i}" for i in range(X.shape[1])]
+        self.is_trained = True
+
+    def predict(self, X: np.ndarray) -> "BaselineResult":
+        """Predict anomalies based on distance to nearest KMeans centroid.
+
+        Parameters
+        ----------
+        X:
+            Feature matrix of shape (n_samples, n_features).
+
+        Returns
+        -------
+        BaselineResult with normalised anomaly scores and binary predictions.
+        """
+        if not self.is_trained:
+            raise ValueError("Detector must be fitted before prediction")
+
+        start_time = time.time()
+
+        X_scaled = self.scaler.transform(X)
+        distances = self._distances_to_nearest_centroid(X_scaled)
+
+        # Normalise to [0, 1]
+        min_d, max_d = float(np.min(distances)), float(np.max(distances))
+        if max_d > min_d:
+            anomaly_scores = (distances - min_d) / (max_d - min_d)
+        else:
+            anomaly_scores = np.zeros_like(distances)
+
+        anomaly_predictions = (distances > self.threshold_).astype(int)
+
+        processing_time = time.time() - start_time
+
+        return BaselineResult(
+            detector_name=self.name,
+            baseline_type=self.baseline_type,
+            anomaly_scores=anomaly_scores,
+            anomaly_predictions=anomaly_predictions,
+            detection_threshold=self.threshold_,
+            processing_time=processing_time,
+            model_parameters={
+                "n_clusters": self.n_clusters,
+                "threshold_std_multiplier": self.threshold_std_multiplier,
+                "fitted_threshold": self.threshold_,
+            },
+        )
+
+
 class BaselineComparator:
     """Compares multiple baseline detectors against ground truth"""
     
@@ -862,7 +1094,7 @@ class BaselineComparator:
 # Export key classes
 __all__ = [
     'BaseAnomalyDetector',
-    'BaselineResult', 
+    'BaselineResult',
     'BaselineComparator',
     'StatisticalZScoreDetector',
     'StatisticalIQRDetector',
@@ -870,7 +1102,9 @@ __all__ = [
     'OneClassSVMDetector',
     'LocalOutlierFactorDetector',
     'DBSCANAnomalyDetector',
-    'MovingAverageDetector'
+    'MovingAverageDetector',
+    'EllipticEnvelopeDetector',
+    'KMeansDetector',
 ]
 
 
